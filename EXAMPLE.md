@@ -2,11 +2,10 @@
 
 ## Step-by-step Guide
 
-### 1. Build the project
+### 1. Install dependencies
 
 ```bash
 npm install
-npm run build
 ```
 
 ### 2. Add your first profile
@@ -14,7 +13,7 @@ npm run build
 When you run a read command for the first time, you'll be prompted to create a profile:
 
 ```bash
-node dist/index.js read --spreadsheet-id YOUR_SPREADSHEET_ID
+node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID
 ```
 
 This will start an interactive prompt:
@@ -36,7 +35,7 @@ No profiles found. Let's create one!
 You can add multiple profiles for fallback:
 
 ```bash
-node dist/index.js profile:add
+node --experimental-strip-types src/index.ts profile:add
 ```
 
 Interactive prompt example:
@@ -60,7 +59,7 @@ Interactive prompt example:
 #### Using default profile with automatic fallback:
 
 ```bash
-node dist/index.js read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E"
+node --experimental-strip-types src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E"
 ```
 
 Output example:
@@ -79,13 +78,13 @@ Andrew  Male    1. Freshman DE
 #### Using specific profile:
 
 ```bash
-node dist/index.js read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E" --profile backup
+node --experimental-strip-types src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E" --profile backup
 ```
 
 #### Output as JSON:
 
 ```bash
-node dist/index.js read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E" --format json
+node --experimental-strip-types src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E" --format json
 ```
 
 ### 5. Manage profiles
@@ -93,7 +92,7 @@ node dist/index.js read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE
 #### List all profiles:
 
 ```bash
-node dist/index.js profile:list
+node --experimental-strip-types src/index.ts profile:list
 ```
 
 Output:
@@ -112,13 +111,13 @@ Profiles:
 #### Change default profile:
 
 ```bash
-node dist/index.js profile:set-default --name backup
+node --experimental-strip-types src/index.ts profile:set-default --name backup
 ```
 
 #### Remove a profile:
 
 ```bash
-node dist/index.js profile:remove --name backup
+node --experimental-strip-types src/index.ts profile:remove --name backup
 ```
 
 ## How Fallback Works
@@ -133,7 +132,7 @@ When you run a read command without specifying a profile:
 Example with fallback:
 
 ```bash
-node dist/index.js read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1
+node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1
 ```
 
 Console output:
@@ -156,15 +155,15 @@ Create multiple profiles with different API keys to handle rate limits:
 
 ```bash
 # Add first API key with priority 1
-node dist/index.js profile:add
+node --experimental-strip-types src/index.ts profile:add
 # name: api-key-1, auth: API Key, priority: 1, default: yes
 
 # Add second API key with priority 2
-node dist/index.js profile:add
+node --experimental-strip-types src/index.ts profile:add
 # name: api-key-2, auth: API Key, priority: 2, default: no
 
 # Add third API key with priority 3
-node dist/index.js profile:add
+node --experimental-strip-types src/index.ts profile:add
 # name: api-key-3, auth: API Key, priority: 3, default: no
 ```
 
@@ -176,11 +175,11 @@ Use a service account as primary and API key as backup:
 
 ```bash
 # Add service account with priority 1
-node dist/index.js profile:add
+node --experimental-strip-types src/index.ts profile:add
 # name: service-account, auth: Service Account, priority: 1, default: yes
 
 # Add API key with priority 2
-node dist/index.js profile:add
+node --experimental-strip-types src/index.ts profile:add
 # name: api-key-backup, auth: API Key, priority: 2, default: no
 ```
 
@@ -214,7 +213,7 @@ You can test with Google's public sample spreadsheet:
 
 ```bash
 # This spreadsheet is publicly accessible
-node dist/index.js read \
+node --experimental-strip-types src/index.ts read \
   --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms \
   --range "Class Data!A1:E"
 ```

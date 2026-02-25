@@ -1,148 +1,225 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import { ProfileManager } from './profile-manager';
-import { SpreadsheetReader } from './spreadsheet-reader';
-import { createProfileInteractive, addProfileCommand } from './interactive';
+import { parseArgs } from 'node:util';
+import { ProfileManager } from './profile-manager.ts';
+import { SpreadsheetReader } from './spreadsheet-reader.ts';
+import { createProfileInteractive, addProfileCommand } from './interactive.ts';
 
-const program = new Command();
 const profileManager = new ProfileManager();
 const reader = new SpreadsheetReader();
 
-program
-  .name('spreadsheet-cli')
-  .description('CLI tool to read Google Spreadsheets')
-  .version('1.0.0');
+function showHelp() {
+  console.log(`
+Usage: spreadsheet-cli <command> [options]
 
-program
-  .command('read')
-  .description('Read data from a Google Spreadsheet')
-  .requiredOption('-s, --spreadsheet-id <id>', 'Spreadsheet ID')
-  .option('-r, --range <range>', 'Range to read (e.g., Sheet1!A1:D10)', 'Sheet1')
-  .option('-p, --profile <name>', 'Profile name to use')
-  .option('-f, --format <format>', 'Output format (json|csv|table)', 'table')
-  .action(async (options) => {
-    try {
-      // Check if profiles exist, if not, create one interactively
-      if (!profileManager.hasProfiles()) {
-        await createProfileInteractive(profileManager);
-      }
+Commands:
+  read                     Read data from a Google Spreadsheet
+  profile:add              Add a new profile
+  profile:list             List all profiles
+  profile:set-default      Set a profile as default
+  profile:remove           Remove a profile
+  help                     Show this help message
 
-      let profiles;
-      if (options.profile) {
-        const profile = profileManager.getProfile(options.profile);
-        if (!profile) {
-          console.error(`Error: Profile "${options.profile}" not found`);
-          process.exit(1);
-        }
-        profiles = [profile];
-      } else {
-        // Use default profile first, then try others by priority
-        const defaultProfile = profileManager.getDefaultProfile();
-        const sortedProfiles = profileManager.getProfilesSortedByPriority();
-        
-        if (defaultProfile) {
-          // Put default first, then others
-          profiles = [
-            defaultProfile,
-            ...sortedProfiles.filter(p => p.name !== defaultProfile.name)
-          ];
-        } else {
-          profiles = sortedProfiles;
-        }
-      }
+Options for 'read' command:
+  -s, --spreadsheet-id <id>  Spreadsheet ID (required)
+  -r, --range <range>        Range to read (default: "Sheet1")
+  -p, --profile <name>       Profile name to use
+  -f, --format <format>      Output format: json|csv|table (default: "table")
 
-      if (profiles.length === 0) {
-        console.error('Error: No profiles available');
+Options for 'profile:set-default' and 'profile:remove' commands:
+  -n, --name <name>          Profile name (required)
+
+Examples:
+  spreadsheet-cli read -s 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms -r "Sheet1!A1:D10"
+  spreadsheet-cli profile:add
+  spreadsheet-cli profile:list
+  spreadsheet-cli profile:set-default -n myprofile
+  spreadsheet-cli profile:remove -n myprofile
+`);
+}
+
+async function handleReadCommand(args: string[]) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      'spreadsheet-id': { type: 'string', short: 's' },
+      'range': { type: 'string', short: 'r', default: 'Sheet1' },
+      'profile': { type: 'string', short: 'p' },
+      'format': { type: 'string', short: 'f', default: 'table' }
+    },
+    strict: true
+  });
+
+  if (!values['spreadsheet-id']) {
+    console.error('Error: --spreadsheet-id (-s) is required for read command');
+    process.exit(1);
+  }
+
+  try {
+    // Check if profiles exist, if not, create one interactively
+    if (!profileManager.hasProfiles()) {
+      await createProfileInteractive(profileManager);
+    }
+
+    let profiles;
+    if (values.profile) {
+      const profile = profileManager.getProfile(values.profile);
+      if (!profile) {
+        console.error(`Error: Profile "${values.profile}" not found`);
         process.exit(1);
       }
-
-      const { data, profile } = await reader.readWithFallback(
-        options.spreadsheetId,
-        options.range,
-        profiles
-      );
-
-      console.log(`\nData retrieved using profile: ${profile.name}\n`);
-
-      // Format output
-      if (options.format === 'json') {
-        console.log(JSON.stringify(data, null, 2));
-      } else if (options.format === 'csv') {
-        data.forEach(row => {
-          console.log(row.map(cell => `"${cell}"`).join(','));
-        });
+      profiles = [profile];
+    } else {
+      // Use default profile first, then try others by priority
+      const defaultProfile = profileManager.getDefaultProfile();
+      const sortedProfiles = profileManager.getProfilesSortedByPriority();
+      
+      if (defaultProfile) {
+        // Put default first, then others
+        profiles = [
+          defaultProfile,
+          ...sortedProfiles.filter(p => p.name !== defaultProfile.name)
+        ];
       } else {
-        // Table format
-        data.forEach(row => {
-          console.log(row.join('\t'));
-        });
+        profiles = sortedProfiles;
       }
-    } catch (error: any) {
-      console.error('Error:', error.message);
-      process.exit(1);
     }
-  });
 
-program
-  .command('profile:add')
-  .description('Add a new profile')
-  .action(async () => {
-    try {
-      await addProfileCommand(profileManager);
-    } catch (error: any) {
-      console.error('Error:', error.message);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('profile:list')
-  .description('List all profiles')
-  .action(() => {
-    const profiles = profileManager.getProfiles();
     if (profiles.length === 0) {
-      console.log('No profiles found');
-      return;
-    }
-
-    console.log('\nProfiles:\n');
-    profiles.forEach(profile => {
-      const defaultLabel = profile.isDefault ? ' [DEFAULT]' : '';
-      const authType = profile.apiKey ? 'API Key' : 'Service Account';
-      console.log(`  ${profile.name}${defaultLabel}`);
-      console.log(`    Priority: ${profile.priority}`);
-      console.log(`    Auth: ${authType}`);
-      console.log();
-    });
-  });
-
-program
-  .command('profile:set-default')
-  .description('Set a profile as default')
-  .requiredOption('-n, --name <name>', 'Profile name')
-  .action((options) => {
-    const success = profileManager.setDefaultProfile(options.name);
-    if (success) {
-      console.log(`✓ Profile "${options.name}" set as default`);
-    } else {
-      console.error(`Error: Profile "${options.name}" not found`);
+      console.error('Error: No profiles available');
       process.exit(1);
     }
-  });
 
-program
-  .command('profile:remove')
-  .description('Remove a profile')
-  .requiredOption('-n, --name <name>', 'Profile name')
-  .action((options) => {
-    const success = profileManager.removeProfile(options.name);
-    if (success) {
-      console.log(`✓ Profile "${options.name}" removed`);
+    const { data, profile } = await reader.readWithFallback(
+      values['spreadsheet-id'],
+      values.range || 'Sheet1',
+      profiles
+    );
+
+    console.log(`\nData retrieved using profile: ${profile.name}\n`);
+
+    // Format output
+    if (values.format === 'json') {
+      console.log(JSON.stringify(data, null, 2));
+    } else if (values.format === 'csv') {
+      data.forEach(row => {
+        console.log(row.map(cell => `"${cell}"`).join(','));
+      });
     } else {
-      console.error(`Error: Profile "${options.name}" not found`);
-      process.exit(1);
+      // Table format
+      data.forEach(row => {
+        console.log(row.join('\t'));
+      });
     }
+  } catch (error: any) {
+    console.error('Error:', error.message);
+    process.exit(1);
+  }
+}
+
+async function handleProfileAddCommand() {
+  try {
+    await addProfileCommand(profileManager);
+  } catch (error: any) {
+    console.error('Error:', error.message);
+    process.exit(1);
+  }
+}
+
+function handleProfileListCommand() {
+  const profiles = profileManager.getProfiles();
+  if (profiles.length === 0) {
+    console.log('No profiles found');
+    return;
+  }
+
+  console.log('\nProfiles:\n');
+  profiles.forEach(profile => {
+    const defaultLabel = profile.isDefault ? ' [DEFAULT]' : '';
+    const authType = profile.apiKey ? 'API Key' : 'Service Account';
+    console.log(`  ${profile.name}${defaultLabel}`);
+    console.log(`    Priority: ${profile.priority}`);
+    console.log(`    Auth: ${authType}`);
+    console.log();
+  });
+}
+
+function handleProfileSetDefaultCommand(args: string[]) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      'name': { type: 'string', short: 'n' }
+    },
+    strict: true
   });
 
-program.parse(process.argv);
+  if (!values.name) {
+    console.error('Error: --name (-n) is required for profile:set-default command');
+    process.exit(1);
+  }
+
+  const success = profileManager.setDefaultProfile(values.name);
+  if (success) {
+    console.log(`✓ Profile "${values.name}" set as default`);
+  } else {
+    console.error(`Error: Profile "${values.name}" not found`);
+    process.exit(1);
+  }
+}
+
+function handleProfileRemoveCommand(args: string[]) {
+  const { values } = parseArgs({
+    args,
+    options: {
+      'name': { type: 'string', short: 'n' }
+    },
+    strict: true
+  });
+
+  if (!values.name) {
+    console.error('Error: --name (-n) is required for profile:remove command');
+    process.exit(1);
+  }
+
+  const success = profileManager.removeProfile(values.name);
+  if (success) {
+    console.log(`✓ Profile "${values.name}" removed`);
+  } else {
+    console.error(`Error: Profile "${values.name}" not found`);
+    process.exit(1);
+  }
+}
+
+// Main execution
+const args = process.argv.slice(2);
+
+if (args.length === 0 || args[0] === 'help' || args[0] === '--help' || args[0] === '-h') {
+  showHelp();
+  process.exit(0);
+}
+
+const command = args[0];
+const commandArgs = args.slice(1);
+
+switch (command) {
+  case 'read':
+    await handleReadCommand(commandArgs);
+    break;
+  case 'profile:add':
+    await handleProfileAddCommand();
+    break;
+  case 'profile:list':
+    handleProfileListCommand();
+    break;
+  case 'profile:set-default':
+    handleProfileSetDefaultCommand(commandArgs);
+    break;
+  case 'profile:remove':
+    handleProfileRemoveCommand(commandArgs);
+    break;
+  default:
+    console.error(`Error: Unknown command "${command}"`);
+    console.log('Run "spreadsheet-cli help" for usage information');
+    process.exit(1);
+}
+

@@ -1,7 +1,19 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import { Profile, ProfileConfig } from './types';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+
+export type Profile = {
+  name: string;
+  apiKey?: string;
+  clientEmail?: string;
+  privateKey?: string;
+  priority: number;
+  isDefault: boolean;
+}
+
+type ProfileConfig = {
+  profiles: Profile[];
+}
 
 const CONFIG_DIR = path.join(os.homedir(), '.spreadsheet-cli');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');

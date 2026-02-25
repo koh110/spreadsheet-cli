@@ -15,7 +15,6 @@ CLI tool to read Google Spreadsheets with multi-profile management and automatic
 
 ```bash
 npm install
-npm run build
 ```
 
 Or install globally:
@@ -30,38 +29,44 @@ npm install -g .
 
 ```bash
 # First run will prompt you to create a profile interactively
-node dist/index.js read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1!A1:D10
+node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1!A1:D10
 
 # Use a specific profile
-node dist/index.js read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --profile myprofile
+node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --profile myprofile
 
 # Output as JSON
-node dist/index.js read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --format json
+node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --format json
 
 # Output as CSV
-node dist/index.js read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --format csv
+node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --format csv
+```
+
+Or use npm scripts:
+
+```bash
+npm start read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1
 ```
 
 ### Profile Management
 
 #### Add a new profile
 ```bash
-node dist/index.js profile:add
+node --experimental-strip-types src/index.ts profile:add
 ```
 
 #### List all profiles
 ```bash
-node dist/index.js profile:list
+node --experimental-strip-types src/index.ts profile:list
 ```
 
 #### Set default profile
 ```bash
-node dist/index.js profile:set-default --name myprofile
+node --experimental-strip-types src/index.ts profile:set-default --name myprofile
 ```
 
 #### Remove a profile
 ```bash
-node dist/index.js profile:remove --name myprofile
+node --experimental-strip-types src/index.ts profile:remove --name myprofile
 ```
 
 ## Authentication

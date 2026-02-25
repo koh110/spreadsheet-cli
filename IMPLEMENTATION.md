@@ -36,31 +36,29 @@ This project implements a complete CLI tool for reading Google Spreadsheets with
 ```
 spreadsheet-cli/
 ├── src/
-│   ├── index.ts              # Main CLI entry point with all commands
-│   ├── types.ts              # TypeScript interfaces
-│   ├── profile-manager.ts    # Profile CRUD operations
+│   ├── index.ts              # Main CLI entry point with parseArgs
+│   ├── profile-manager.ts    # Profile CRUD operations & types
 │   ├── interactive.ts        # Interactive profile creation
 │   └── spreadsheet-reader.ts # Google Sheets API integration
-├── dist/                     # Compiled JavaScript output
 ├── package.json              # Dependencies and scripts
-├── tsconfig.json             # TypeScript configuration
 ├── README.md                 # Main documentation
 ├── EXAMPLE.md                # Detailed usage examples
 └── .gitignore               # Git ignore rules
 ```
 
 ### 🛠 Technologies Used
-- **Node.js** - Runtime environment
-- **TypeScript** - Type-safe development
-- **Commander.js** - CLI framework
+- **Node.js v24+** - Runtime environment with experimental TypeScript support
+- **TypeScript** - Type-safe development (using Node.js --experimental-strip-types)
+- **node:util parseArgs** - Native Node.js CLI argument parsing
 - **googleapis** - Google Sheets API client
 - **inquirer** - Interactive command-line prompts
+- **ESM** - Modern ES modules
 
 ### 📝 Available Commands
 
 #### Read Command
 ```bash
-node dist/index.js read --spreadsheet-id <id> [options]
+node --experimental-strip-types src/index.ts read --spreadsheet-id <id> [options]
 ```
 Options:
 - `--range <range>` - Cell range (default: "Sheet1")
@@ -69,10 +67,10 @@ Options:
 
 #### Profile Commands
 ```bash
-node dist/index.js profile:add          # Add new profile
-node dist/index.js profile:list         # List all profiles
-node dist/index.js profile:set-default --name <name>
-node dist/index.js profile:remove --name <name>
+node --experimental-strip-types src/index.ts profile:add          # Add new profile
+node --experimental-strip-types src/index.ts profile:list         # List all profiles
+node --experimental-strip-types src/index.ts profile:set-default --name <name>
+node --experimental-strip-types src/index.ts profile:remove --name <name>
 ```
 
 ### 🔐 Authentication Methods
@@ -123,14 +121,11 @@ Profile C (priority: 3) - Tried third → Success ✓
 # Install dependencies
 npm install
 
-# Build TypeScript to JavaScript
-npm run build
-
-# Run CLI
-node dist/index.js [command] [options]
+# Run CLI directly with Node.js
+node --experimental-strip-types src/index.ts [command] [options]
 
 # Or use npm scripts
-npm run dev -- [command] [options]
+npm start [command] [options]
 ```
 
 ### ✨ Key Implementation Highlights

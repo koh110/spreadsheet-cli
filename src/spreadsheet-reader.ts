@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { Profile } from './types';
+import type { Profile } from './profile-manager.ts';
 
 export class SpreadsheetReader {
   async readSpreadsheet(spreadsheetId: string, range: string, profile: Profile): Promise<any[][]> {

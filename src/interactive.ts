@@ -1,6 +1,6 @@
 import inquirer from 'inquirer';
-import { Profile } from './types';
-import { ProfileManager } from './profile-manager';
+import { ProfileManager } from './profile-manager.ts';
+import type { Profile } from './profile-manager.ts';
 
 export async function createProfileInteractive(profileManager: ProfileManager): Promise<Profile> {
   console.log('\nNo profiles found. Let\'s create one!\n');
