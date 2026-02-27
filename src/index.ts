@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util';
-import { ProfileManager } from './profile-manager.ts';
-import { SpreadsheetReader } from './spreadsheet-reader.ts';
+import { createProfileManager } from './profile-manager.ts';
+import { createSpreadsheetReader } from './spreadsheet-reader.ts';
 import { createProfileInteractive, addProfileCommand } from './interactive.ts';
 
-const profileManager = new ProfileManager();
-const reader = new SpreadsheetReader();
+const profileManager = await createProfileManager();
+const reader = createSpreadsheetReader();
 
 function showHelp() {
   console.log(`
@@ -151,7 +151,7 @@ function handleProfileListCommand() {
   });
 }
 
-function handleProfileSetDefaultCommand(args: string[]) {
+async function handleProfileSetDefaultCommand(args: string[]) {
   const { values } = parseArgs({
     args,
     options: {
@@ -165,7 +165,7 @@ function handleProfileSetDefaultCommand(args: string[]) {
     process.exit(1);
   }
 
-  const success = profileManager.setDefaultProfile(values.name);
+  const success = await profileManager.setDefaultProfile(values.name);
   if (success) {
     console.log(`✓ Profile "${values.name}" set as default`);
   } else {
@@ -174,7 +174,7 @@ function handleProfileSetDefaultCommand(args: string[]) {
   }
 }
 
-function handleProfileRemoveCommand(args: string[]) {
+async function handleProfileRemoveCommand(args: string[]) {
   const { values } = parseArgs({
     args,
     options: {
@@ -188,7 +188,7 @@ function handleProfileRemoveCommand(args: string[]) {
     process.exit(1);
   }
 
-  const success = profileManager.removeProfile(values.name);
+  const success = await profileManager.removeProfile(values.name);
   if (success) {
     console.log(`✓ Profile "${values.name}" removed`);
   } else {
@@ -219,10 +219,10 @@ switch (command) {
     handleProfileListCommand();
     break;
   case 'profile:set-default':
-    handleProfileSetDefaultCommand(commandArgs);
+    await handleProfileSetDefaultCommand(commandArgs);
     break;
   case 'profile:remove':
-    handleProfileRemoveCommand(commandArgs);
+    await handleProfileRemoveCommand(commandArgs);
     break;
   default:
     console.error(`Error: Unknown command "${command}"`);

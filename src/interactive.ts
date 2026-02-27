@@ -1,7 +1,6 @@
 import inquirer from 'inquirer';
 import { z } from 'zod';
-import { ProfileManager } from './profile-manager.ts';
-import type { Profile } from './profile-manager.ts';
+import type { Profile, ProfileManager } from './profile-manager.ts';
 
 const baseAnswerShape = {
   name: z.string(),
@@ -207,7 +206,7 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
     }
   })()
 
-  profileManager.addProfile(profile);
+  await profileManager.addProfile(profile);
   console.log(`\n✓ Profile "${profile.name}" created successfully!\n`);
 
   return profile;
