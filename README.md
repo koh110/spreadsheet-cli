@@ -8,7 +8,7 @@ CLI tool to read Google Spreadsheets with multi-profile management and automatic
 - 👤 Manage multiple authentication profiles
 - 🔄 Automatic fallback with priority-based profile selection
 - 🎯 Interactive profile creation
-- 🔑 Support for API Keys and Service Account authentication
+- 🔑 Support for API Keys, Service Accounts, and OAuth authentication
 - 📤 Multiple output formats (JSON, CSV, Table)
 
 ## Installation
@@ -29,16 +29,16 @@ npm install -g .
 
 ```bash
 # First run will prompt you to create a profile interactively
-node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1!A1:D10
+node src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1!A1:D10
 
 # Use a specific profile
-node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --profile myprofile
+node src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --profile myprofile
 
 # Output as JSON
-node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --format json
+node src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --format json
 
 # Output as CSV
-node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --format csv
+node src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --format csv
 ```
 
 Or use npm scripts:
@@ -51,22 +51,22 @@ npm start read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1
 
 #### Add a new profile
 ```bash
-node --experimental-strip-types src/index.ts profile:add
+node src/index.ts profile:add
 ```
 
 #### List all profiles
 ```bash
-node --experimental-strip-types src/index.ts profile:list
+node src/index.ts profile:list
 ```
 
 #### Set default profile
 ```bash
-node --experimental-strip-types src/index.ts profile:set-default --name myprofile
+node src/index.ts profile:set-default --name myprofile
 ```
 
 #### Remove a profile
 ```bash
-node --experimental-strip-types src/index.ts profile:remove --name myprofile
+node src/index.ts profile:remove --name myprofile
 ```
 
 ## Authentication
@@ -88,6 +88,15 @@ For more secure access:
 5. Download the JSON key file
 6. Share your spreadsheet with the service account email
 7. When creating a profile, paste the client_email and private_key from the JSON file
+
+### OAuth (User)
+For user-owned spreadsheets without service accounts:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create or select a project
+3. Enable the Google Sheets API
+4. Create an OAuth client (Desktop app recommended)
+5. Generate a refresh token with offline access
+6. When creating a profile, paste the client ID, client secret, and refresh token
 
 ## Profile Priority
 

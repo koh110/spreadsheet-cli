@@ -7,9 +7,9 @@
     "spreadsheet-cli": "src/index.ts"
   },
   "scripts": {
-    "start": "node --experimental-strip-types src/index.ts",
-    "dev": "node --experimental-strip-types src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/index.ts",
+    "dev": "node src/index.ts",
+    "test": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
@@ -25,6 +25,11 @@
   "homepage": "https://github.com/koh110/spreadsheet-cli#readme",
   "dependencies": {
     "googleapis": "^171.4.0",
-    "inquirer": "^13.3.0"
+    "inquirer": "^13.3.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "typescript": "^5.9.3"
   }
 }

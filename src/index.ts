@@ -111,8 +111,9 @@ async function handleReadCommand(args: string[]) {
         console.log(row.join('\t'));
       });
     }
-  } catch (error: any) {
-    console.error('Error:', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Error:', message);
     process.exit(1);
   }
 }
@@ -120,8 +121,9 @@ async function handleReadCommand(args: string[]) {
 async function handleProfileAddCommand() {
   try {
     await addProfileCommand(profileManager);
-  } catch (error: any) {
-    console.error('Error:', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Error:', message);
     process.exit(1);
   }
 }
@@ -136,7 +138,12 @@ function handleProfileListCommand() {
   console.log('\nProfiles:\n');
   profiles.forEach(profile => {
     const defaultLabel = profile.isDefault ? ' [DEFAULT]' : '';
-    const authType = profile.apiKey ? 'API Key' : 'Service Account';
+    const authType =
+      profile.authType === 'apiKey'
+        ? 'API Key'
+        : profile.authType === 'oauth'
+          ? 'OAuth'
+          : 'Service Account';
     console.log(`  ${profile.name}${defaultLabel}`);
     console.log(`    Priority: ${profile.priority}`);
     console.log(`    Auth: ${authType}`);
@@ -222,4 +229,3 @@ switch (command) {
     console.log('Run "spreadsheet-cli help" for usage information');
     process.exit(1);
 }
-

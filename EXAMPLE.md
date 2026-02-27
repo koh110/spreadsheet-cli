@@ -13,7 +13,7 @@ npm install
 When you run a read command for the first time, you'll be prompted to create a profile:
 
 ```bash
-node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID
+node src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID
 ```
 
 This will start an interactive prompt:
@@ -35,7 +35,7 @@ No profiles found. Let's create one!
 You can add multiple profiles for fallback:
 
 ```bash
-node --experimental-strip-types src/index.ts profile:add
+node src/index.ts profile:add
 ```
 
 Interactive prompt example:
@@ -54,12 +54,26 @@ Interactive prompt example:
 ✓ Profile "backup" created successfully!
 ```
 
+OAuth prompt example:
+
+```
+? Profile name: oauth-user
+? Authentication type: OAuth (User)
+? OAuth client ID: YOUR_CLIENT_ID
+? OAuth client secret: YOUR_CLIENT_SECRET
+? OAuth refresh token: YOUR_REFRESH_TOKEN
+? Priority (lower number = higher priority): 3
+? Set as default profile? No
+
+✓ Profile "oauth-user" created successfully!
+```
+
 ### 4. Read spreadsheet data
 
 #### Using default profile with automatic fallback:
 
 ```bash
-node --experimental-strip-types src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E"
+node src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E"
 ```
 
 Output example:
@@ -78,13 +92,13 @@ Andrew  Male    1. Freshman DE
 #### Using specific profile:
 
 ```bash
-node --experimental-strip-types src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E" --profile backup
+node src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E" --profile backup
 ```
 
 #### Output as JSON:
 
 ```bash
-node --experimental-strip-types src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E" --format json
+node src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E" --format json
 ```
 
 ### 5. Manage profiles
@@ -92,7 +106,7 @@ node --experimental-strip-types src/index.ts read --spreadsheet-id 1BxiMVs0XRA5n
 #### List all profiles:
 
 ```bash
-node --experimental-strip-types src/index.ts profile:list
+node src/index.ts profile:list
 ```
 
 Output:
@@ -106,18 +120,22 @@ Profiles:
   backup
     Priority: 2
     Auth: Service Account
+
+  oauth-user
+    Priority: 3
+    Auth: OAuth
 ```
 
 #### Change default profile:
 
 ```bash
-node --experimental-strip-types src/index.ts profile:set-default --name backup
+node src/index.ts profile:set-default --name backup
 ```
 
 #### Remove a profile:
 
 ```bash
-node --experimental-strip-types src/index.ts profile:remove --name backup
+node src/index.ts profile:remove --name backup
 ```
 
 ## How Fallback Works
@@ -132,7 +150,7 @@ When you run a read command without specifying a profile:
 Example with fallback:
 
 ```bash
-node --experimental-strip-types src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1
+node src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1
 ```
 
 Console output:
@@ -155,15 +173,15 @@ Create multiple profiles with different API keys to handle rate limits:
 
 ```bash
 # Add first API key with priority 1
-node --experimental-strip-types src/index.ts profile:add
+node src/index.ts profile:add
 # name: api-key-1, auth: API Key, priority: 1, default: yes
 
 # Add second API key with priority 2
-node --experimental-strip-types src/index.ts profile:add
+node src/index.ts profile:add
 # name: api-key-2, auth: API Key, priority: 2, default: no
 
 # Add third API key with priority 3
-node --experimental-strip-types src/index.ts profile:add
+node src/index.ts profile:add
 # name: api-key-3, auth: API Key, priority: 3, default: no
 ```
 
@@ -175,12 +193,22 @@ Use a service account as primary and API key as backup:
 
 ```bash
 # Add service account with priority 1
-node --experimental-strip-types src/index.ts profile:add
+node src/index.ts profile:add
 # name: service-account, auth: Service Account, priority: 1, default: yes
 
 # Add API key with priority 2
-node --experimental-strip-types src/index.ts profile:add
+node src/index.ts profile:add
 # name: api-key-backup, auth: API Key, priority: 2, default: no
+```
+
+### Use Case 3: OAuth for User-Owned Sheets
+
+Use OAuth for user-owned spreadsheets that aren't shared with service accounts:
+
+```bash
+# Add OAuth profile with priority 1
+node src/index.ts profile:add
+# name: oauth-user, auth: OAuth, priority: 1, default: yes
 ```
 
 ## Configuration File
@@ -192,15 +220,26 @@ Profiles are stored in `~/.spreadsheet-cli/config.json`:
   "profiles": [
     {
       "name": "default",
+      "authType": "apiKey",
       "apiKey": "YOUR_API_KEY",
       "priority": 1,
       "isDefault": true
     },
     {
       "name": "backup",
+      "authType": "serviceAccount",
       "clientEmail": "service@project.iam.gserviceaccount.com",
       "privateKey": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
       "priority": 2,
+      "isDefault": false
+    },
+    {
+      "name": "oauth-user",
+      "authType": "oauth",
+      "oauthClientId": "YOUR_CLIENT_ID",
+      "oauthClientSecret": "YOUR_CLIENT_SECRET",
+      "oauthRefreshToken": "YOUR_REFRESH_TOKEN",
+      "priority": 3,
       "isDefault": false
     }
   ]
@@ -213,7 +252,7 @@ You can test with Google's public sample spreadsheet:
 
 ```bash
 # This spreadsheet is publicly accessible
-node --experimental-strip-types src/index.ts read \
+node src/index.ts read \
   --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms \
   --range "Class Data!A1:E"
 ```

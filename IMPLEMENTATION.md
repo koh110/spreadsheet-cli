@@ -13,7 +13,7 @@ This project implements a complete CLI tool for reading Google Spreadsheets with
 
 2. **Profile Management System**
    - Store multiple authentication profiles in `~/.spreadsheet-cli/config.json`
-   - Support for both API Keys and Service Account authentication
+   - Support for API Keys, Service Accounts, and OAuth authentication
    - CRUD operations: Create, Read, Update, Delete profiles
    - Set default profile functionality
    - Priority-based profile ordering
@@ -48,7 +48,7 @@ spreadsheet-cli/
 
 ### 🛠 Technologies Used
 - **Node.js v24+** - Runtime environment with experimental TypeScript support
-- **TypeScript** - Type-safe development (using Node.js --experimental-strip-types)
+- **TypeScript** - Type-safe development
 - **node:util parseArgs** - Native Node.js CLI argument parsing
 - **googleapis** - Google Sheets API client
 - **inquirer** - Interactive command-line prompts
@@ -58,7 +58,7 @@ spreadsheet-cli/
 
 #### Read Command
 ```bash
-node --experimental-strip-types src/index.ts read --spreadsheet-id <id> [options]
+node src/index.ts read --spreadsheet-id <id> [options]
 ```
 Options:
 - `--range <range>` - Cell range (default: "Sheet1")
@@ -67,10 +67,10 @@ Options:
 
 #### Profile Commands
 ```bash
-node --experimental-strip-types src/index.ts profile:add          # Add new profile
-node --experimental-strip-types src/index.ts profile:list         # List all profiles
-node --experimental-strip-types src/index.ts profile:set-default --name <name>
-node --experimental-strip-types src/index.ts profile:remove --name <name>
+node src/index.ts profile:add          # Add new profile
+node src/index.ts profile:list         # List all profiles
+node src/index.ts profile:set-default --name <name>
+node src/index.ts profile:remove --name <name>
 ```
 
 ### 🔐 Authentication Methods
@@ -84,6 +84,10 @@ node --experimental-strip-types src/index.ts profile:remove --name <name>
 - More secure and flexible
 - Requires sharing spreadsheet with service account email
 - Better for production use
+
+**3. OAuth (User)**
+- Access user-owned spreadsheets without service accounts
+- Requires client ID, client secret, and refresh token
 
 ### 🔄 Priority-Based Fallback
 
@@ -115,6 +119,10 @@ Profile C (priority: 3) - Tried third → Success ✓
    - Backup: API Key
    - Ensures maximum uptime
 
+4. **User-Owned Sheets**
+   - OAuth profile for user access
+   - Optional API key fallback for public data
+
 ### 🚀 Build & Run
 
 ```bash
@@ -122,7 +130,7 @@ Profile C (priority: 3) - Tried third → Success ✓
 npm install
 
 # Run CLI directly with Node.js
-node --experimental-strip-types src/index.ts [command] [options]
+node src/index.ts [command] [options]
 
 # Or use npm scripts
 npm start [command] [options]
