@@ -1,49 +1,48 @@
 import inquirer from 'inquirer';
 import { z } from 'zod';
 import type { Profile, ProfileManager } from './profile-manager.ts';
+import { zodAuthTypeLiterals } from './schema.ts';
 
-const baseAnswerShape = {
+const baseAnswer = z.object({
   name: z.string(),
-  authType: z.union([z.literal('apiKey'), z.literal('serviceAccount'), z.literal('oauth')]),
+  authType: z.union([zodAuthTypeLiterals.apiKey, zodAuthTypeLiterals.serviceAccount, zodAuthTypeLiterals.adc]),
   priority: z.number(),
   isDefault: z.boolean()
-};
+});
 
 const apiKeyAnswersSchema = z
   .object({
-    ...baseAnswerShape,
-    authType: z.literal('apiKey'),
+    ...baseAnswer.shape,
+    authType: zodAuthTypeLiterals.apiKey,
     apiKey: z.string()
   })
   .strict();
 
 const serviceAccountAnswersSchema = z
   .object({
-    ...baseAnswerShape,
-    authType: z.literal('serviceAccount'),
+    ...baseAnswer.shape,
+    authType: zodAuthTypeLiterals.serviceAccount,
     clientEmail: z.string(),
     privateKey: z.string()
   })
   .strict();
 
-const oauthAnswersSchema = z
+const adcAnswersSchema = z
   .object({
-    ...baseAnswerShape,
-    authType: z.literal('oauth'),
-    oauthClientId: z.string(),
-    oauthClientSecret: z.string(),
-    oauthRefreshToken: z.string()
+    ...baseAnswer.shape,
+    authType: zodAuthTypeLiterals.adc,
+    adcCredentialPath: z.string()
   })
   .strict();
 
 const profileAnswersSchema = z.union([
   apiKeyAnswersSchema,
   serviceAccountAnswersSchema,
-  oauthAnswersSchema
+  adcAnswersSchema
 ]);
 
 const authTypeSchema = z.object({
-  authType: baseAnswerShape.authType
+  authType: baseAnswer.shape.authType
 });
 
 type AuthType = ReturnType<typeof authTypeSchema.parse>['authType'];
@@ -73,11 +72,11 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
     {
       type: 'list',
       name: 'authType',
-      message: 'Authentication type:',
+      message: `Authentication type(${Object.keys(zodAuthTypeLiterals).join('|')}):`,
       choices: [
         { name: 'API Key', value: 'apiKey' },
         { name: 'Service Account (JSON key)', value: 'serviceAccount' },
-        { name: 'OAuth (User)', value: 'oauth' }
+        { name: 'ADC (User)', value: 'adc' }
       ]
     },
     {
@@ -117,42 +116,6 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
       }
     },
     {
-      type: 'input',
-      name: 'oauthClientId',
-      message: 'OAuth client ID:',
-      when: (answers) => getAuthType(answers) === 'oauth',
-      validate: (input: string) => {
-        if (!input || input.trim() === '') {
-          return 'OAuth client ID is required';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'oauthClientSecret',
-      message: 'OAuth client secret:',
-      when: (answers) => getAuthType(answers) === 'oauth',
-      validate: (input: string) => {
-        if (!input || input.trim() === '') {
-          return 'OAuth client secret is required';
-        }
-        return true;
-      }
-    },
-    {
-      type: 'input',
-      name: 'oauthRefreshToken',
-      message: 'OAuth refresh token:',
-      when: (answers) => getAuthType(answers) === 'oauth',
-      validate: (input: string) => {
-        if (!input || input.trim() === '') {
-          return 'OAuth refresh token is required';
-        }
-        return true;
-      }
-    },
-    {
       type: 'number',
       name: 'priority',
       message: 'Priority (lower number = higher priority):',
@@ -173,7 +136,8 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
   ]);
 
   const profile = (() => {
-    switch (answers.authType) {
+    const { authType } = answers;
+    switch (authType) {
       case 'apiKey':
         return {
           name: answers.name.trim(),
@@ -191,20 +155,21 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
           clientEmail: answers.clientEmail.trim(),
           privateKey: answers.privateKey.trim()
         } satisfies Profile;
-      case 'oauth':
+      case 'adc': {
         return {
           name: answers.name.trim(),
           priority: answers.priority,
           isDefault: answers.isDefault,
-          authType: 'oauth',
-          oauthClientId: answers.oauthClientId.trim(),
-          oauthClientSecret: answers.oauthClientSecret.trim(),
-          oauthRefreshToken: answers.oauthRefreshToken.trim()
+          authType: 'adc',
         } satisfies Profile;
-      default:
+      }
+      default: {
+        // biome-ignore lint/correctness/noUnusedVariables: unreachable check
+        const unreachable: never = authType;
         throw new Error('Invalid authentication type');
+      }
     }
-  })()
+  })();
 
   await profileManager.addProfile(profile);
   console.log(`\n✓ Profile "${profile.name}" created successfully!\n`);

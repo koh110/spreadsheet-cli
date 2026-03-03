@@ -89,14 +89,12 @@ For more secure access:
 6. Share your spreadsheet with the service account email
 7. When creating a profile, paste the client_email and private_key from the JSON file
 
-### OAuth (User)
+### ADC (User)
 For user-owned spreadsheets without service accounts:
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create or select a project
-3. Enable the Google Sheets API
-4. Create an OAuth client (Desktop app recommended)
-5. Generate a refresh token with offline access
-6. When creating a profile, paste the client ID, client secret, and refresh token
+1. Install Google Cloud CLI and run `gcloud auth application-default login`
+2. This creates ADC credentials (default: `~/.config/gcloud/application_default_credentials.json`)
+3. When creating an ADC profile, set `adcCredentialPath` to the ADC JSON file path
+4. Create separate ADC profiles with different ADC files if you need per-profile identities
 
 ## Profile Priority
 

@@ -1,5 +1,4 @@
 import { google } from 'googleapis';
-import type { OAuth2Client } from 'google-auth-library';
 import type { Profile } from './profile-manager.ts';
 
 function getAuth(profile: Profile) {
@@ -12,23 +11,21 @@ function getAuth(profile: Profile) {
         key: profile.privateKey.replace(/\\n/g, '\n'),
         scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
       });
-    case 'oauth': {
-      const oauthClient = new google.auth.OAuth2(
-        profile.oauthClientId,
-        profile.oauthClientSecret
-      );
-      oauthClient.setCredentials({
-        refresh_token: profile.oauthRefreshToken
+    case 'adc':
+      return new google.auth.GoogleAuth({
+        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
       });
-      return oauthClient;
-    }
     default:
       throw new Error('Profile has invalid authentication configuration');
   }
 }
 
-async function readSpreadsheet(spreadsheetId: string, range: string, profile: Profile) {
-  const auth: string | OAuth2Client = getAuth(profile);
+async function readSpreadsheet(
+  spreadsheetId: string,
+  range: string,
+  profile: Profile
+) {
+  const auth = getAuth(profile);
   const sheets = google.sheets({ version: 'v4', auth });
 
   try {
@@ -53,9 +50,7 @@ async function readWithFallback(
 
   for (const profile of profiles) {
     try {
-      console.log(`Trying profile: ${profile.name} (priority: ${profile.priority})`);
       const data = await readSpreadsheet(spreadsheetId, range, profile);
-      console.log(`✓ Successfully read with profile: ${profile.name}`);
       return { data, profile };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);

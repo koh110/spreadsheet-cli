@@ -59,9 +59,7 @@ OAuth prompt example:
 ```
 ? Profile name: oauth-user
 ? Authentication type: OAuth (User)
-? OAuth client ID: YOUR_CLIENT_ID
-? OAuth client secret: YOUR_CLIENT_SECRET
-? OAuth refresh token: YOUR_REFRESH_TOKEN
+? ADC credential file path: /home/you/.config/gcloud/application_default_credentials.json
 ? Priority (lower number = higher priority): 3
 ? Set as default profile? No
 
@@ -201,14 +199,14 @@ node src/index.ts profile:add
 # name: api-key-backup, auth: API Key, priority: 2, default: no
 ```
 
-### Use Case 3: OAuth for User-Owned Sheets
+### Use Case 3: ADC for User-Owned Sheets
 
-Use OAuth for user-owned spreadsheets that aren't shared with service accounts:
+Use ADC for user-owned spreadsheets that aren't shared with service accounts:
 
 ```bash
-# Add OAuth profile with priority 1
+# Add ADC profile with priority 1
 node src/index.ts profile:add
-# name: oauth-user, auth: OAuth, priority: 1, default: yes
+# name: adc-user, auth: adc, priority: 1, default: yes
 ```
 
 ## Configuration File
@@ -234,11 +232,9 @@ Profiles are stored in `~/.spreadsheet-cli/config.json`:
       "isDefault": false
     },
     {
-      "name": "oauth-user",
-      "authType": "oauth",
-      "oauthClientId": "YOUR_CLIENT_ID",
-      "oauthClientSecret": "YOUR_CLIENT_SECRET",
-      "oauthRefreshToken": "YOUR_REFRESH_TOKEN",
+      "name": "adc-user",
+      "authType": "adc",
+      "adcCredentialPath": "/home/you/.config/gcloud/application_default_credentials.json",
       "priority": 3,
       "isDefault": false
     }

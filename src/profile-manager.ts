@@ -1,10 +1,7 @@
-import path from 'node:path';
-import os from 'node:os';
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { z } from 'zod';
-
-const CONFIG_DIR = path.join(os.homedir(), '.spreadsheet-cli');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+import { CONFIG_DIR, CONFIG_FILE } from './config.ts';
+import { zodAuthTypeLiterals } from './schema.ts';
 
 const baseProfileShape = {
   name: z.string(),
@@ -15,7 +12,7 @@ const baseProfileShape = {
 const apiKeyProfileSchema = z
   .object({
     ...baseProfileShape,
-    authType: z.literal('apiKey').optional().default('apiKey'),
+    authType: zodAuthTypeLiterals.apiKey.optional().default('apiKey'),
     apiKey: z.string()
   })
   .strict();
@@ -23,26 +20,23 @@ const apiKeyProfileSchema = z
 const serviceAccountProfileSchema = z
   .object({
     ...baseProfileShape,
-    authType: z.literal('serviceAccount').optional().default('serviceAccount'),
+    authType: zodAuthTypeLiterals.serviceAccount.optional().default('serviceAccount'),
     clientEmail: z.string(),
     privateKey: z.string()
   })
   .strict();
 
-const oauthProfileSchema = z
+const adcProfileSchema = z
   .object({
     ...baseProfileShape,
-    authType: z.literal('oauth').optional().default('oauth'),
-    oauthClientId: z.string(),
-    oauthClientSecret: z.string(),
-    oauthRefreshToken: z.string()
+    authType: zodAuthTypeLiterals.adc.optional().default('adc'),
   })
   .strict();
 
 const profileSchema = z.union([
   apiKeyProfileSchema,
   serviceAccountProfileSchema,
-  oauthProfileSchema
+  adcProfileSchema
 ]);
 
 const configSchema = z
