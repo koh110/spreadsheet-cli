@@ -13,9 +13,8 @@ This project implements a complete CLI tool for reading Google Spreadsheets with
 
 2. **Profile Management System**
    - Store multiple authentication profiles in `~/.spreadsheet-cli/config.json`
-   - Support for API Keys, Service Accounts, and OAuth authentication
+   - Support for API Keys, Service Accounts, and OAuth credentials command authentication
    - CRUD operations: Create, Read, Update, Delete profiles
-   - Set default profile functionality
    - Priority-based profile ordering
 
 3. **Interactive Profile Creation**
@@ -25,8 +24,7 @@ This project implements a complete CLI tool for reading Google Spreadsheets with
    - Guides users through authentication setup
 
 4. **Automatic Fallback Logic**
-   - Tries default profile first (if exists)
-   - Falls back to other profiles in priority order (lowest first)
+   - Tries profiles in priority order (lowest first)
    - Logs each attempt and result
    - Uses first successful profile
    - Handles various failure scenarios (rate limits, invalid credentials, etc.)
@@ -69,7 +67,6 @@ Options:
 ```bash
 node src/index.ts profile:add          # Add new profile
 node src/index.ts profile:list         # List all profiles
-node src/index.ts profile:set-default --name <name>
 node src/index.ts profile:remove --name <name>
 ```
 
@@ -85,22 +82,21 @@ node src/index.ts profile:remove --name <name>
 - Requires sharing spreadsheet with service account email
 - Better for production use
 
-**3. OAuth (User)**
+**3. OAuth Credentials Command (User)**
 - Access user-owned spreadsheets without service accounts
-- Requires client ID, client secret, and refresh token
+- Uses a configured command that returns OAuth `credentials.json` content
 
 ### 🔄 Priority-Based Fallback
 
 The system implements intelligent fallback:
-1. Default profile attempted first (regardless of priority number)
-2. On failure, tries profiles in priority order (1, 2, 3...)
-3. First successful authentication is used
-4. All attempts logged to console for transparency
+1. Profiles are tried in priority order (1, 2, 3...)
+2. First successful authentication is used
+3. All attempts logged to console for transparency
 
 Example scenario:
 ```
-Profile A (default, priority: 2) - Tried first → Fails
-Profile B (priority: 1) - Tried second → Fails  
+Profile B (priority: 1) - Tried first → Fails  
+Profile A (priority: 2) - Tried second → Fails
 Profile C (priority: 3) - Tried third → Success ✓
 ```
 
@@ -120,7 +116,7 @@ Profile C (priority: 3) - Tried third → Success ✓
    - Ensures maximum uptime
 
 4. **User-Owned Sheets**
-   - OAuth profile for user access
+   - OAuth credentials command profile for user access
    - Optional API key fallback for public data
 
 ### 🚀 Build & Run
@@ -212,4 +208,4 @@ This implementation fully satisfies the requirements:
 ✅ Manage multiple accounts with profiles
 ✅ Interactive profile creation when none exist
 ✅ Priority-based profile selection
-✅ Automatic fallback when default profile fails
+✅ Automatic fallback by priority order

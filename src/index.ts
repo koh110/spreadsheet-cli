@@ -13,7 +13,6 @@ Commands:
   read                     Read data from a Google Spreadsheet
   profile:add              Add a new profile
   profile:list             List all profiles
-  profile:set-default      Set a profile as default
   profile:remove           Remove a profile
   help                     Show this help message
 
@@ -23,14 +22,13 @@ Options for 'read' command:
   -p, --profile <name>       Profile name to use
   -f, --format <format>      Output format: json|csv|table (default: "table")
 
-Options for 'profile:set-default' and 'profile:remove' commands:
+Options for 'profile:remove' command:
   -n, --name <name>          Profile name (required)
 
 Examples:
   spreadsheet-cli read -s 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms -r "Sheet1!A1:D10"
   spreadsheet-cli profile:add
   spreadsheet-cli profile:list
-  spreadsheet-cli profile:set-default -n myprofile
   spreadsheet-cli profile:remove -n myprofile
 `);
 }
@@ -55,24 +53,21 @@ if (positionals.length === 0 || positionals[0] === 'help' || values.help === tru
 const [command, ...args] = positionals;
 
 switch (command) {
-  case 'read': {
+  case 'read':
     await import('./commands.ts').then(module => module.handleReadCommand(profileManager));
     break;
-  }
+  case 'profile:clear':
+    await import('./commands.ts').then(module => module.handleProfileClearCommand(profileManager));
+    break;
   case 'profile:add':
     await import('./commands.ts').then(module => module.handleProfileAddCommand(profileManager));
     break;
   case 'profile:list':
     await import('./commands.ts').then(module => module.handleProfileListCommand(profileManager));
     break;
-  case 'profile:set-default': {
-    await import('./commands.ts').then(module => module.handleProfileSetDefaultCommand(profileManager, args));
-    break;
-  }
-  case 'profile:remove': {
+  case 'profile:remove':
     await import('./commands.ts').then(module => module.handleProfileRemoveCommand(profileManager, args));
     break;
-  }
   default:
     console.error(`Error: Unknown command "${command}"`);
     console.log('Run "spreadsheet-cli help" for usage information');

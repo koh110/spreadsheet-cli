@@ -39,18 +39,7 @@ export async function handleReadCommand(profileManager: ProfileManager) {
         }
         return [profile];
       }
-      // Use default profile first, then try others by priority
-      const defaultProfile = profileManager.getDefaultProfile();
-      const sortedProfiles = profileManager.getProfilesSortedByPriority();
-      
-      if (defaultProfile) {
-        // Put default first, then others
-        return [
-          defaultProfile,
-          ...sortedProfiles.filter(p => p.name !== defaultProfile.name)
-        ];
-      }
-      return sortedProfiles;
+      return profileManager.getProfilesSortedByPriority();
     })();
 
     if (profiles.length === 0) {
@@ -86,6 +75,16 @@ export async function handleReadCommand(profileManager: ProfileManager) {
   }
 }
 
+export async function handleProfileClearCommand(profileManager: ProfileManager) {
+  try {
+    await profileManager.clearProfiles();
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Error:', message);
+    process.exit(1);
+  }
+}
+
 export async function handleProfileAddCommand(profileManager: ProfileManager) {
   try {
     await addProfileCommand(profileManager);
@@ -105,40 +104,19 @@ export function handleProfileListCommand(profileManager: ProfileManager) {
 
   console.log('\nProfiles:\n');
   for (const profile of profiles) {
-    const defaultLabel = profile.isDefault ? ' [DEFAULT]' : '';
     const authType =
       profile.authType === 'apiKey'
         ? 'API Key'
-        : profile.authType === 'adc'
-          ? 'adc'
+        : profile.authType === 'oauthCredentials'
+          ? 'OAuth credentials command'
           : 'Service Account';
-    console.log(`  ${profile.name}${defaultLabel}`);
+    console.log(`  ${profile.name}`);
     console.log(`    Priority: ${profile.priority}`);
     console.log(`    Auth: ${authType}`);
+    if (profile.authType === 'oauthCredentials') {
+      console.log(`    credentials command: ${profile.command}`);
+    }
     console.log();
-  }
-}
-
-export async function handleProfileSetDefaultCommand(profileManager: ProfileManager, args: string[]) {
-  const { values } = parseArgs({
-    args,
-    options: {
-      'name': { type: 'string', short: 'n' }
-    },
-    strict: true
-  });
-
-  if (!values.name) {
-    console.error('Error: --name (-n) is required for profile:set-default command');
-    process.exit(1);
-  }
-
-  const success = await profileManager.setDefaultProfile(values.name);
-  if (success) {
-    console.log(`✓ Profile "${values.name}" set as default`);
-  } else {
-    console.error(`Error: Profile "${values.name}" not found`);
-    process.exit(1);
   }
 }
 

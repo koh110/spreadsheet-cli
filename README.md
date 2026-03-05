@@ -8,7 +8,7 @@ CLI tool to read Google Spreadsheets with multi-profile management and automatic
 - 👤 Manage multiple authentication profiles
 - 🔄 Automatic fallback with priority-based profile selection
 - 🎯 Interactive profile creation
-- 🔑 Support for API Keys, Service Accounts, and OAuth authentication
+- 🔑 Support for API Keys, Service Accounts, and OAuth credentials command authentication
 - 📤 Multiple output formats (JSON, CSV, Table)
 
 ## Installation
@@ -59,11 +59,6 @@ node src/index.ts profile:add
 node src/index.ts profile:list
 ```
 
-#### Set default profile
-```bash
-node src/index.ts profile:set-default --name myprofile
-```
-
 #### Remove a profile
 ```bash
 node src/index.ts profile:remove --name myprofile
@@ -89,19 +84,17 @@ For more secure access:
 6. Share your spreadsheet with the service account email
 7. When creating a profile, paste the client_email and private_key from the JSON file
 
-### ADC (User)
+### OAuth credentials command (User)
 For user-owned spreadsheets without service accounts:
-1. Install Google Cloud CLI and run `gcloud auth application-default login`
-2. This creates ADC credentials (default: `~/.config/gcloud/application_default_credentials.json`)
-3. When creating an ADC profile, set `adcCredentialPath` to the ADC JSON file path
-4. Create separate ADC profiles with different ADC files if you need per-profile identities
+1. Prepare a command that outputs OAuth `credentials.json` content (for example with 1Password CLI)
+2. Configure that command in the profile
+3. The CLI executes the command at read time and uses the returned JSON for authentication
 
 ## Profile Priority
 
 Profiles have a priority setting (lower number = higher priority). When reading a spreadsheet:
-1. The default profile is tried first
-2. If it fails, other profiles are tried in priority order
-3. The first successful profile is used
+1. Profiles are tried in priority order
+2. The first successful profile is used
 
 This allows automatic fallback when a profile's quota is exhausted or authentication fails.
 

@@ -5,9 +5,12 @@ import { zodAuthTypeLiterals } from './schema.ts';
 
 const baseAnswer = z.object({
   name: z.string(),
-  authType: z.union([zodAuthTypeLiterals.apiKey, zodAuthTypeLiterals.serviceAccount, zodAuthTypeLiterals.adc]),
-  priority: z.number(),
-  isDefault: z.boolean()
+  authType: z.union([
+    zodAuthTypeLiterals.apiKey,
+    zodAuthTypeLiterals.serviceAccount,
+    zodAuthTypeLiterals.oauthCredentials
+  ]),
+  priority: z.number()
 });
 
 const apiKeyAnswersSchema = z
@@ -27,18 +30,18 @@ const serviceAccountAnswersSchema = z
   })
   .strict();
 
-const adcAnswersSchema = z
+const oauthCredentialsAnswersSchema = z
   .object({
     ...baseAnswer.shape,
-    authType: zodAuthTypeLiterals.adc,
-    adcCredentialPath: z.string()
+    authType: zodAuthTypeLiterals.oauthCredentials,
+    command: z.string()
   })
   .strict();
 
 const profileAnswersSchema = z.union([
   apiKeyAnswersSchema,
   serviceAccountAnswersSchema,
-  adcAnswersSchema
+  oauthCredentialsAnswersSchema
 ]);
 
 const authTypeSchema = z.object({
@@ -76,7 +79,7 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
       choices: [
         { name: 'API Key', value: 'apiKey' },
         { name: 'Service Account (JSON key)', value: 'serviceAccount' },
-        { name: 'ADC (User)', value: 'adc' }
+        { name: 'OAuth credentials command (User)', value: 'oauthCredentials' }
       ]
     },
     {
@@ -116,6 +119,19 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
       }
     },
     {
+      type: 'list',
+      name: 'command',
+      message: 'Command to fetch OAuth credentials.json:',
+      when: (answers) => getAuthType(answers) === 'oauthCredentials',
+      validate: (input: string) => {
+        if (!input || input.trim() === '') {
+          return 'Command is required';
+        }
+        return true;
+      }
+    },
+    
+    {
       type: 'number',
       name: 'priority',
       message: 'Priority (lower number = higher priority):',
@@ -126,12 +142,6 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
         }
         return true;
       }
-    },
-    {
-      type: 'confirm',
-      name: 'isDefault',
-      message: 'Set as default profile?',
-      default: true
     }
   ]);
 
@@ -142,7 +152,6 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
         return {
           name: answers.name.trim(),
           priority: answers.priority,
-          isDefault: answers.isDefault,
           authType: 'apiKey',
           apiKey: answers.apiKey.trim()
         } satisfies Profile;
@@ -150,17 +159,16 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
         return {
           name: answers.name.trim(),
           priority: answers.priority,
-          isDefault: answers.isDefault,
           authType: 'serviceAccount',
           clientEmail: answers.clientEmail.trim(),
           privateKey: answers.privateKey.trim()
         } satisfies Profile;
-      case 'adc': {
+      case 'oauthCredentials': {
         return {
           name: answers.name.trim(),
           priority: answers.priority,
-          isDefault: answers.isDefault,
-          authType: 'adc',
+          authType: 'oauthCredentials',
+          command: answers.command.trim()
         } satisfies Profile;
       }
       default: {

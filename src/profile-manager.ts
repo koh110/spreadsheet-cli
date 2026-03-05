@@ -5,8 +5,7 @@ import { zodAuthTypeLiterals } from './schema.ts';
 
 const baseProfileShape = {
   name: z.string(),
-  priority: z.number(),
-  isDefault: z.boolean()
+  priority: z.number()
 };
 
 const apiKeyProfileSchema = z
@@ -26,17 +25,18 @@ const serviceAccountProfileSchema = z
   })
   .strict();
 
-const adcProfileSchema = z
+const oauthCredentialsProfileSchema = z
   .object({
     ...baseProfileShape,
-    authType: zodAuthTypeLiterals.adc.optional().default('adc'),
+    authType: zodAuthTypeLiterals.oauthCredentials.optional().default('oauthCredentials'),
+    command: z.string()
   })
   .strict();
 
 const profileSchema = z.union([
   apiKeyProfileSchema,
   serviceAccountProfileSchema,
-  adcProfileSchema
+  oauthCredentialsProfileSchema
 ]);
 
 const configSchema = z
@@ -56,14 +56,6 @@ function formatZodError(error: z.ZodError): string {
       return `${path}: ${issue.message}`;
     })
     .join('; ');
-}
-
-function normalizeProfile(raw: unknown) {
-  const parsed = profileSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new Error(`Invalid profile configuration: ${formatZodError(parsed.error)}`);
-  }
-  return parsed.data;
 }
 
 async function pathExists(targetPath: string) {
@@ -90,9 +82,10 @@ async function loadConfig() {
   const parsed: unknown = JSON.parse(data);
   const normalized = configSchema.safeParse(parsed);
   if (!normalized.success) {
-    throw new Error(`Invalid config file format: ${formatZodError(normalized.error)}`);
+    console.warn(`Invalid config file format: ${formatZodError(normalized.error)}`);
+    return { profiles: [] };
   }
-  return { profiles: normalized.data.profiles.map(normalizeProfile) };
+  return normalized.data;
 }
 
 async function saveConfig(config: ProfileConfig) {
@@ -105,10 +98,6 @@ function getProfiles(config: ProfileConfig) {
 
 function getProfilesSortedByPriority(config: ProfileConfig) {
   return [...config.profiles].sort((a, b) => a.priority - b.priority);
-}
-
-function getDefaultProfile(config: ProfileConfig) {
-  return config.profiles.find(p => p.isDefault);
 }
 
 function getProfile(config: ProfileConfig, name: string) {
@@ -124,29 +113,7 @@ async function addProfile(config: ProfileConfig, profile: Profile) {
     config.profiles.push(profile);
   }
 
-  if (profile.isDefault) {
-    config.profiles.forEach(p => {
-      if (p.name !== profile.name) {
-        p.isDefault = false;
-      }
-    });
-  }
-
   await saveConfig(config);
-}
-
-async function setDefaultProfile(config: ProfileConfig, name: string) {
-  const profile = getProfile(config, name);
-  if (!profile) {
-    return false;
-  }
-
-  for (const p of config.profiles) {
-    p.isDefault = p.name === name;
-  }
-
-  await saveConfig(config);
-  return true;
 }
 
 async function removeProfile(config: ProfileConfig, name: string) {
@@ -159,6 +126,11 @@ async function removeProfile(config: ProfileConfig, name: string) {
   return true;
 }
 
+async function clearProfiles(config: ProfileConfig) {
+  config.profiles = [];
+  await saveConfig(config);
+}
+
 function hasProfiles(config: ProfileConfig) {
   return config.profiles.length > 0;
 }
@@ -169,19 +141,16 @@ type DropConfigArg<F extends (...args: any[]) => unknown> =
 export async function createProfileManager() {
   const config = await loadConfig();
 
-
   return {
     getProfiles: () => getProfiles(config),
     getProfilesSortedByPriority: () => getProfilesSortedByPriority(config),
-    getDefaultProfile: () => getDefaultProfile(config),
     getProfile: (...args: DropConfigArg<typeof getProfile>) =>
       getProfile(config, ...args),
     addProfile: (...args: DropConfigArg<typeof addProfile>) =>
       addProfile(config, ...args),
-    setDefaultProfile: (...args: DropConfigArg<typeof setDefaultProfile>) =>
-      setDefaultProfile(config, ...args),
     removeProfile: (...args: DropConfigArg<typeof removeProfile>) =>
       removeProfile(config, ...args),
-    hasProfiles: () => hasProfiles(config)
+    hasProfiles: () => hasProfiles(config),
+    clearProfiles: () => clearProfiles(config)
   };
 }

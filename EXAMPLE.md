@@ -25,7 +25,6 @@ No profiles found. Let's create one!
 ? Authentication type: API Key
 ? API Key: YOUR_API_KEY_HERE
 ? Priority (lower number = higher priority): 1
-? Set as default profile? Yes
 
 ✓ Profile "default" created successfully!
 ```
@@ -49,26 +48,24 @@ Interactive prompt example:
 ...your key here...
 -----END PRIVATE KEY-----
 ? Priority (lower number = higher priority): 2
-? Set as default profile? No
 
 ✓ Profile "backup" created successfully!
 ```
 
-OAuth prompt example:
+OAuth credentials command prompt example:
 
 ```
 ? Profile name: oauth-user
-? Authentication type: OAuth (User)
-? ADC credential file path: /home/you/.config/gcloud/application_default_credentials.json
+? Authentication type: OAuth credentials command (User)
+? Command to fetch OAuth credentials.json: op read "op://vault/google-oauth/credentials"
 ? Priority (lower number = higher priority): 3
-? Set as default profile? No
 
 ✓ Profile "oauth-user" created successfully!
 ```
 
 ### 4. Read spreadsheet data
 
-#### Using default profile with automatic fallback:
+#### Using automatic fallback:
 
 ```bash
 node src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E"
@@ -111,7 +108,7 @@ Output:
 ```
 Profiles:
 
-  default [DEFAULT]
+  default
     Priority: 1
     Auth: API Key
 
@@ -121,13 +118,7 @@ Profiles:
 
   oauth-user
     Priority: 3
-    Auth: OAuth
-```
-
-#### Change default profile:
-
-```bash
-node src/index.ts profile:set-default --name backup
+    Auth: OAuth credentials command
 ```
 
 #### Remove a profile:
@@ -140,10 +131,9 @@ node src/index.ts profile:remove --name backup
 
 When you run a read command without specifying a profile:
 
-1. The **default profile** is tried first (regardless of priority)
-2. If it fails, profiles are tried in **priority order** (lowest number first)
-3. The first successful profile is used to read the data
-4. All attempts and results are logged to the console
+1. Profiles are tried in **priority order** (lowest number first)
+2. The first successful profile is used to read the data
+3. All attempts and results are logged to the console
 
 Example with fallback:
 
@@ -172,15 +162,15 @@ Create multiple profiles with different API keys to handle rate limits:
 ```bash
 # Add first API key with priority 1
 node src/index.ts profile:add
-# name: api-key-1, auth: API Key, priority: 1, default: yes
+# name: api-key-1, auth: API Key, priority: 1
 
 # Add second API key with priority 2
 node src/index.ts profile:add
-# name: api-key-2, auth: API Key, priority: 2, default: no
+# name: api-key-2, auth: API Key, priority: 2
 
 # Add third API key with priority 3
 node src/index.ts profile:add
-# name: api-key-3, auth: API Key, priority: 3, default: no
+# name: api-key-3, auth: API Key, priority: 3
 ```
 
 Now when you read a spreadsheet, if one key hits the rate limit, it automatically falls back to the next.
@@ -192,21 +182,21 @@ Use a service account as primary and API key as backup:
 ```bash
 # Add service account with priority 1
 node src/index.ts profile:add
-# name: service-account, auth: Service Account, priority: 1, default: yes
+# name: service-account, auth: Service Account, priority: 1
 
 # Add API key with priority 2
 node src/index.ts profile:add
-# name: api-key-backup, auth: API Key, priority: 2, default: no
+# name: api-key-backup, auth: API Key, priority: 2
 ```
 
-### Use Case 3: ADC for User-Owned Sheets
+### Use Case 3: OAuth Credentials Command for User-Owned Sheets
 
-Use ADC for user-owned spreadsheets that aren't shared with service accounts:
+Use an OAuth credentials command for user-owned spreadsheets that aren't shared with service accounts:
 
 ```bash
-# Add ADC profile with priority 1
+# Add OAuth command profile with priority 1
 node src/index.ts profile:add
-# name: adc-user, auth: adc, priority: 1, default: yes
+# name: oauth-user, auth: oauthCredentials, priority: 1
 ```
 
 ## Configuration File
@@ -220,23 +210,20 @@ Profiles are stored in `~/.spreadsheet-cli/config.json`:
       "name": "default",
       "authType": "apiKey",
       "apiKey": "YOUR_API_KEY",
-      "priority": 1,
-      "isDefault": true
+      "priority": 1
     },
     {
       "name": "backup",
       "authType": "serviceAccount",
       "clientEmail": "service@project.iam.gserviceaccount.com",
       "privateKey": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
-      "priority": 2,
-      "isDefault": false
+      "priority": 2
     },
     {
-      "name": "adc-user",
-      "authType": "adc",
-      "adcCredentialPath": "/home/you/.config/gcloud/application_default_credentials.json",
-      "priority": 3,
-      "isDefault": false
+      "name": "oauth-user",
+      "authType": "oauthCredentials",
+      "command": "op read \"op://vault/google-oauth/credentials\"",
+      "priority": 3
     }
   ]
 }
