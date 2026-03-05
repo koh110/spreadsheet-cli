@@ -47,13 +47,11 @@ export async function handleReadCommand(profileManager: ProfileManager) {
       process.exit(1);
     }
 
-    const { data, profile } = await reader.readWithFallback(
+    const { data } = await reader.readWithFallback(
       values['spreadsheet-id'],
       values.range || 'Sheet1',
       profiles
     );
-
-    console.log(`\nData retrieved using profile: ${profile.name}\n`);
 
     // Format output
     if (values.format === 'json') {

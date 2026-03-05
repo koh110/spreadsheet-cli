@@ -2,6 +2,7 @@
 import fs from 'node:fs/promises'
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { spawn } from 'node:child_process'
 import { URL } from 'node:url'
 import { google, Auth } from 'googleapis'
 
@@ -41,8 +42,40 @@ function isAddressInfo(address: ReturnType<http.Server['address']>): address is 
   return typeof address === 'object' && address !== null && typeof address.port === 'number'
 }
 
-export async function authenticateWithCredentials(credentialsJsonStr: string) {
-  const credentials = parseCredentials(credentialsJsonStr)
+function openBrowser(url: string) {
+  console.log('Authorize this app by visiting this url:', url)
+  const isWsl =
+    process.platform === 'linux' &&
+    (Boolean(process.env.WSL_DISTRO_NAME) || Boolean(process.env.WSL_INTEROP))
+
+  try {
+    if (process.platform === 'darwin') {
+      spawn('open', [url], { stdio: 'ignore', detached: true }).unref()
+      return
+    }
+    if (process.platform === 'win32') {
+      spawn(
+        'powershell',
+        ['-NoProfile', '-Command', `Start-Process '${url.replaceAll("'", "''")}'`],
+        { stdio: 'ignore', detached: true }
+      ).unref()
+      return
+    }
+    if (isWsl) {
+      spawn(
+        'powershell.exe',
+        ['-NoProfile', '-Command', `Start-Process '${url.replaceAll("'", "''")}'`],
+        { stdio: 'ignore', detached: true }
+      ).unref()
+      return
+    }
+    spawn('xdg-open', [url], { stdio: 'ignore', detached: true }).unref()
+  } catch {
+  }
+}
+
+async function authenticateWithCredentials(credentialsJson: string) {
+  const credentials = parseCredentials(credentialsJson)
   const { key, isInstalled } = getCredentialKey(credentials)
   if (!key.redirect_uris || key.redirect_uris.length === 0) {
     throw new Error(INVALID_REDIRECT_URI)
@@ -108,7 +141,58 @@ export async function authenticateWithCredentials(credentialsJsonStr: string) {
         access_type: 'offline',
         scope: SCOPES.join(' '),
       })
-      console.log('Authorize this app by visiting this url:', authorizeUrl)
+      openBrowser(authorizeUrl)
     })
   })
+}
+
+async function loadSavedCredentialsIfExist(tokenPath: string) {
+  try {
+    const content = await fs.readFile(tokenPath, { encoding: 'utf-8' })
+    const credentials = JSON.parse(content)
+    const client = google.auth.fromJSON(credentials) as Auth.OAuth2Client
+    await client.refreshAccessToken()
+    return client
+  } catch (err) {
+    try {
+      await fs.unlink(tokenPath)
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+}
+
+async function saveCredentials(client: Auth.OAuth2Client, options: { credentialsJson: string; tokenPath: string }) {
+  const keys = parseCredentials(options.credentialsJson)
+  const key = keys.installed || keys.web
+  const payload = JSON.stringify({
+    type: 'authorized_user',
+    client_id: key.client_id,
+    client_secret: key.client_secret,
+    refresh_token: client.credentials.refresh_token,
+  })
+  await fs.writeFile(options.tokenPath, payload)
+}
+
+/**
+ * Load or request or authorization to call APIs.
+ *
+ */
+export async function authenticate(options: {
+  tokenPath: string
+  credentialsJson: string
+}) {
+  const jsonClient = await loadSavedCredentialsIfExist(options.tokenPath)
+  if (jsonClient) {
+    return jsonClient
+  }
+  if (!options.credentialsJson) {
+    throw new Error(`${CREDENTIALS_ENV_KEY} is not set`)
+  }
+  const client = await authenticateWithCredentials(options.credentialsJson)
+  if (client.credentials) {
+    await saveCredentials(client, { credentialsJson: options.credentialsJson, tokenPath: options.tokenPath })
+  }
+  return client
 }

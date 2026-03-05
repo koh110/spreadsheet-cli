@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
 import { google } from 'googleapis';
 import { parseEnv } from 'node:util';
-import { authenticateWithCredentials } from './google.ts'
+import { TOKEN_PATH } from './config.ts';
+import { authenticate } from './google.ts'
 import type { Profile } from './profile-manager.ts';
 
 const COMMAND_TIMEOUT_MS = 30_000;
@@ -91,7 +92,7 @@ async function getAuth(profile: Profile) {
       });
     case 'oauthCredentials': {
       const credentials = await getOauthCredentials(profile.command);
-      const client = await authenticateWithCredentials(credentials);
+      const client = await authenticate({ credentialsJson: credentials, tokenPath: TOKEN_PATH });
       return client;
     }
     default:
