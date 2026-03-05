@@ -91,9 +91,11 @@ async function getAuth(profile: Profile) {
         scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
       });
     case 'oauthCredentials': {
-      const credentials = await getOauthCredentials(profile.command);
-      const client = await authenticate({ credentialsJson: credentials, tokenPath: TOKEN_PATH });
-      return client;
+      const result = await authenticate({ tokenPath: TOKEN_PATH, getCredentials: () => getOauthCredentials(profile.command) });
+      if (!result.success) {
+        throw new Error('Failed to authenticate with OAuth credentials');
+      }
+      return result.client;
     }
     default:
       throw new Error('Profile has invalid authentication configuration');
@@ -113,7 +115,6 @@ async function readSpreadsheet(
       spreadsheetId,
       range,
     });
-
     return response.data.values || [];
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
@@ -128,15 +129,21 @@ async function readWithFallback(
 ) {
   let lastError: Error | null = null;
 
-  for (const profile of profiles) {
+  let res: { data: Awaited<ReturnType<typeof readSpreadsheet>>; profile: Profile} | null = null;
+  for (let i = 0; i < profiles.length; i++) {
+    const profile = profiles[i];
     try {
       const data = await readSpreadsheet(spreadsheetId, range, profile);
-      return { data, profile };
+      res = { data, profile }
+      break
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = error instanceof Error    ? error.message : String(error);
       console.log(`Failed [${profile.name}]: ${message}`);
       lastError = error instanceof Error ? error : new Error(message);
     }
+  }
+  if (res !== null) {
+    return res
   }
 
   throw new Error(

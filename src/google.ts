@@ -181,18 +181,19 @@ async function saveCredentials(client: Auth.OAuth2Client, options: { credentials
  */
 export async function authenticate(options: {
   tokenPath: string
-  credentialsJson: string
-}) {
+  getCredentials: () => Promise<string>
+}): Promise<{ success: true; cached: boolean; client: Auth.OAuth2Client } | { success: false }> {
   const jsonClient = await loadSavedCredentialsIfExist(options.tokenPath)
   if (jsonClient) {
-    return jsonClient
+    return { success: true, cached: true, client: jsonClient }
   }
-  if (!options.credentialsJson) {
-    throw new Error(`${CREDENTIALS_ENV_KEY} is not set`)
+  const credentialsJson = await options.getCredentials()
+  if (!credentialsJson) {
+    return { success: false }
   }
-  const client = await authenticateWithCredentials(options.credentialsJson)
+  const client = await authenticateWithCredentials(credentialsJson)
   if (client.credentials) {
-    await saveCredentials(client, { credentialsJson: options.credentialsJson, tokenPath: options.tokenPath })
+    await saveCredentials(client, { credentialsJson, tokenPath: options.tokenPath })
   }
-  return client
+  return { success: true, cached: false, client }
 }
