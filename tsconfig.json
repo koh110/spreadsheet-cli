@@ -5,6 +5,7 @@
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "nodenext",
+    "noEmit": true,
     "allowImportingTsExtensions": true
   },
   "include": ["src/*.ts"],

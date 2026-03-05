@@ -28,18 +28,30 @@ function parseCredentials(credentialsJson: string) {
 }
 
 function getCredentialKey(credentials: {
-  installed?: { client_id: string; client_secret: string; redirect_uris?: string[] }
+  installed?: {
+    client_id: string
+    client_secret: string
+    redirect_uris?: string[]
+  }
   web?: { client_id: string; client_secret: string; redirect_uris?: string[] }
 }) {
   const key = credentials.installed || credentials.web
   if (!key) {
-    throw new Error(`${CREDENTIALS_ENV_KEY} must include installed or web credentials`)
+    throw new Error(
+      `${CREDENTIALS_ENV_KEY} must include installed or web credentials`
+    )
   }
   return { key, isInstalled: Boolean(credentials.installed) }
 }
 
-function isAddressInfo(address: ReturnType<http.Server['address']>): address is AddressInfo {
-  return typeof address === 'object' && address !== null && typeof address.port === 'number'
+function isAddressInfo(
+  address: ReturnType<http.Server['address']>
+): address is AddressInfo {
+  return (
+    typeof address === 'object' &&
+    address !== null &&
+    typeof address.port === 'number'
+  )
 }
 
 function openBrowser(url: string) {
@@ -56,7 +68,11 @@ function openBrowser(url: string) {
     if (process.platform === 'win32') {
       spawn(
         'powershell',
-        ['-NoProfile', '-Command', `Start-Process '${url.replaceAll("'", "''")}'`],
+        [
+          '-NoProfile',
+          '-Command',
+          `Start-Process '${url.replaceAll("'", "''")}'`
+        ],
         { stdio: 'ignore', detached: true }
       ).unref()
       return
@@ -64,14 +80,17 @@ function openBrowser(url: string) {
     if (isWsl) {
       spawn(
         'powershell.exe',
-        ['-NoProfile', '-Command', `Start-Process '${url.replaceAll("'", "''")}'`],
+        [
+          '-NoProfile',
+          '-Command',
+          `Start-Process '${url.replaceAll("'", "''")}'`
+        ],
         { stdio: 'ignore', detached: true }
       ).unref()
       return
     }
     spawn('xdg-open', [url], { stdio: 'ignore', detached: true }).unref()
-  } catch {
-  }
+  } catch {}
 }
 
 async function authenticateWithCredentials(credentialsJson: string) {
@@ -87,7 +106,7 @@ async function authenticateWithCredentials(credentialsJson: string) {
 
   const client = new Auth.OAuth2Client({
     clientId: key.client_id,
-    clientSecret: key.client_secret,
+    clientSecret: key.client_secret
   })
 
   return new Promise<Auth.OAuth2Client>((resolve, reject) => {
@@ -101,7 +120,9 @@ async function authenticateWithCredentials(credentialsJson: string) {
         const searchParams = url.searchParams
         if (searchParams.has('error')) {
           res.end('Authorization rejected.')
-          reject(new Error(searchParams.get('error') ?? 'Authorization rejected.'))
+          reject(
+            new Error(searchParams.get('error') ?? 'Authorization rejected.')
+          )
           return
         }
         const code = searchParams.get('code')
@@ -112,7 +133,7 @@ async function authenticateWithCredentials(credentialsJson: string) {
         }
         const { tokens } = await client.getToken({
           code,
-          redirect_uri: redirectUri.toString(),
+          redirect_uri: redirectUri.toString()
         })
         client.credentials = tokens
         res.end('Authentication successful! Please return to the console.')
@@ -139,7 +160,7 @@ async function authenticateWithCredentials(credentialsJson: string) {
       const authorizeUrl = client.generateAuthUrl({
         redirect_uri: redirectUri.toString(),
         access_type: 'offline',
-        scope: SCOPES.join(' '),
+        scope: SCOPES.join(' ')
       })
       openBrowser(authorizeUrl)
     })
@@ -159,18 +180,21 @@ async function loadSavedCredentialsIfExist(tokenPath: string) {
     } catch (e) {
       // ignore
     }
-    return null;
+    return null
   }
 }
 
-async function saveCredentials(client: Auth.OAuth2Client, options: { credentialsJson: string; tokenPath: string }) {
+async function saveCredentials(
+  client: Auth.OAuth2Client,
+  options: { credentialsJson: string; tokenPath: string }
+) {
   const keys = parseCredentials(options.credentialsJson)
   const key = keys.installed || keys.web
   const payload = JSON.stringify({
     type: 'authorized_user',
     client_id: key.client_id,
     client_secret: key.client_secret,
-    refresh_token: client.credentials.refresh_token,
+    refresh_token: client.credentials.refresh_token
   })
   await fs.writeFile(options.tokenPath, payload)
 }
@@ -182,7 +206,10 @@ async function saveCredentials(client: Auth.OAuth2Client, options: { credentials
 export async function authenticate(options: {
   tokenPath: string
   getCredentials: () => Promise<string>
-}): Promise<{ success: true; cached: boolean; client: Auth.OAuth2Client } | { success: false }> {
+}): Promise<
+  | { success: true; cached: boolean; client: Auth.OAuth2Client }
+  | { success: false }
+> {
   const jsonClient = await loadSavedCredentialsIfExist(options.tokenPath)
   if (jsonClient) {
     return { success: true, cached: true, client: jsonClient }
@@ -193,7 +220,10 @@ export async function authenticate(options: {
   }
   const client = await authenticateWithCredentials(credentialsJson)
   if (client.credentials) {
-    await saveCredentials(client, { credentialsJson, tokenPath: options.tokenPath })
+    await saveCredentials(client, {
+      credentialsJson,
+      tokenPath: options.tokenPath
+    })
   }
   return { success: true, cached: false, client }
 }

@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node src/index.ts",
     "dev": "node src/index.ts",
-    "format": "biome format",
+    "format": "biome format --write ./src",
     "test": "tsc --noEmit"
   },
   "repository": {
@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.3.2",
-    "biome": "^0.3.3",
+    "@biomejs/biome": "^2.4.5",
     "typescript": "^5.9.3"
   }
 }

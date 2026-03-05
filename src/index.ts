@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { parseArgs } from 'node:util';
-import { createProfileManager } from './profile-manager.ts';
+import { parseArgs } from 'node:util'
+import { createProfileManager } from './profile-manager.ts'
 
-const profileManager = await createProfileManager();
+const profileManager = await createProfileManager()
 
 function showHelp() {
   console.log(`
@@ -30,7 +30,7 @@ Examples:
   spreadsheet-cli profile:add
   spreadsheet-cli profile:list
   spreadsheet-cli profile:remove -n myprofile
-`);
+`)
 }
 
 // Main execution
@@ -45,31 +45,45 @@ const { values, positionals } = parseArgs({
   strict: false
 })
 
-if (positionals.length === 0 || positionals[0] === 'help' || values.help === true) {
-  showHelp();
-  process.exit(0);
+if (
+  positionals.length === 0 ||
+  positionals[0] === 'help' ||
+  values.help === true
+) {
+  showHelp()
+  process.exit(0)
 }
 
-const [command, ...args] = positionals;
+const [command, ...args] = positionals
 
 switch (command) {
   case 'read':
-    await import('./commands.ts').then(module => module.handleReadCommand(profileManager));
-    break;
+    await import('./commands.ts').then((module) =>
+      module.handleReadCommand(profileManager)
+    )
+    break
   case 'profile:clear':
-    await import('./commands.ts').then(module => module.handleProfileClearCommand(profileManager));
-    break;
+    await import('./commands.ts').then((module) =>
+      module.handleProfileClearCommand(profileManager)
+    )
+    break
   case 'profile:add':
-    await import('./commands.ts').then(module => module.handleProfileAddCommand(profileManager));
-    break;
+    await import('./commands.ts').then((module) =>
+      module.handleProfileAddCommand(profileManager)
+    )
+    break
   case 'profile:list':
-    await import('./commands.ts').then(module => module.handleProfileListCommand(profileManager));
-    break;
+    await import('./commands.ts').then((module) =>
+      module.handleProfileListCommand(profileManager)
+    )
+    break
   case 'profile:remove':
-    await import('./commands.ts').then(module => module.handleProfileRemoveCommand(profileManager, args));
-    break;
+    await import('./commands.ts').then((module) =>
+      module.handleProfileRemoveCommand(profileManager, args)
+    )
+    break
   default:
-    console.error(`Error: Unknown command "${command}"`);
-    console.log('Run "spreadsheet-cli help" for usage information');
-    process.exit(1);
+    console.error(`Error: Unknown command "${command}"`)
+    console.log('Run "spreadsheet-cli help" for usage information')
+    process.exit(1)
 }

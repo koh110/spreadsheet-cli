@@ -1,7 +1,7 @@
-import inquirer from 'inquirer';
-import { z } from 'zod';
-import type { Profile, ProfileManager } from './profile-manager.ts';
-import { zodAuthTypeLiterals } from './schema.ts';
+import inquirer from 'inquirer'
+import { z } from 'zod'
+import type { Profile, ProfileManager } from './profile-manager.ts'
+import { zodAuthTypeLiterals } from './schema.ts'
 
 const baseAnswer = z.object({
   name: z.string(),
@@ -11,7 +11,7 @@ const baseAnswer = z.object({
     zodAuthTypeLiterals.oauthCredentials
   ]),
   priority: z.number()
-});
+})
 
 const apiKeyAnswersSchema = z
   .object({
@@ -19,7 +19,7 @@ const apiKeyAnswersSchema = z
     authType: zodAuthTypeLiterals.apiKey,
     apiKey: z.string()
   })
-  .strict();
+  .strict()
 
 const serviceAccountAnswersSchema = z
   .object({
@@ -28,7 +28,7 @@ const serviceAccountAnswersSchema = z
     clientEmail: z.string(),
     privateKey: z.string()
   })
-  .strict();
+  .strict()
 
 const oauthCredentialsAnswersSchema = z
   .object({
@@ -36,28 +36,28 @@ const oauthCredentialsAnswersSchema = z
     authType: zodAuthTypeLiterals.oauthCredentials,
     command: z.string()
   })
-  .strict();
+  .strict()
 
 const profileAnswersSchema = z.union([
   apiKeyAnswersSchema,
   serviceAccountAnswersSchema,
   oauthCredentialsAnswersSchema
-]);
+])
 
 const authTypeSchema = z.object({
   authType: baseAnswer.shape.authType
-});
+})
 
-type AuthType = ReturnType<typeof authTypeSchema.parse>['authType'];
-type ProfileAnswers = ReturnType<typeof profileAnswersSchema.parse>;
+type AuthType = ReturnType<typeof authTypeSchema.parse>['authType']
+type ProfileAnswers = ReturnType<typeof profileAnswersSchema.parse>
 
 function getAuthType(answers: unknown): AuthType | undefined {
-  const parsed = authTypeSchema.safeParse(answers);
-  return parsed.success ? parsed.data.authType : undefined;
+  const parsed = authTypeSchema.safeParse(answers)
+  return parsed.success ? parsed.data.authType : undefined
 }
 
 export async function createProfileInteractive(profileManager: ProfileManager) {
-  console.log('\nNo profiles found. Let\'s create one!\n');
+  console.log("\nNo profiles found. Let's create one!\n")
 
   const answers = await inquirer.prompt<ProfileAnswers>([
     {
@@ -67,9 +67,9 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
       default: 'default',
       validate: (input: string) => {
         if (!input || input.trim() === '') {
-          return 'Profile name is required';
+          return 'Profile name is required'
         }
-        return true;
+        return true
       }
     },
     {
@@ -89,9 +89,9 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
       when: (answers) => getAuthType(answers) === 'apiKey',
       validate: (input: string) => {
         if (!input || input.trim() === '') {
-          return 'API Key is required';
+          return 'API Key is required'
         }
-        return true;
+        return true
       }
     },
     {
@@ -101,21 +101,22 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
       when: (answers) => getAuthType(answers) === 'serviceAccount',
       validate: (input: string) => {
         if (!input || input.trim() === '') {
-          return 'Client email is required';
+          return 'Client email is required'
         }
-        return true;
+        return true
       }
     },
     {
       type: 'input',
       name: 'privateKey',
-      message: 'Private key (paste the key including -----BEGIN/END PRIVATE KEY-----):',
+      message:
+        'Private key (paste the key including -----BEGIN/END PRIVATE KEY-----):',
       when: (answers) => getAuthType(answers) === 'serviceAccount',
       validate: (input: string) => {
         if (!input || input.trim() === '') {
-          return 'Private key is required';
+          return 'Private key is required'
         }
-        return true;
+        return true
       }
     },
     {
@@ -125,12 +126,12 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
       when: (answers) => getAuthType(answers) === 'oauthCredentials',
       validate: (input: string) => {
         if (!input || input.trim() === '') {
-          return 'Command is required';
+          return 'Command is required'
         }
-        return true;
+        return true
       }
     },
-    
+
     {
       type: 'number',
       name: 'priority',
@@ -138,15 +139,15 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
       default: 1,
       validate: (input: number) => {
         if (isNaN(input) || input < 0) {
-          return 'Priority must be a non-negative number';
+          return 'Priority must be a non-negative number'
         }
-        return true;
+        return true
       }
     }
-  ]);
+  ])
 
   const profile = (() => {
-    const { authType } = answers;
+    const { authType } = answers
     switch (authType) {
       case 'apiKey':
         return {
@@ -154,7 +155,7 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
           priority: answers.priority,
           authType: 'apiKey',
           apiKey: answers.apiKey.trim()
-        } satisfies Profile;
+        } satisfies Profile
       case 'serviceAccount':
         return {
           name: answers.name.trim(),
@@ -162,29 +163,29 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
           authType: 'serviceAccount',
           clientEmail: answers.clientEmail.trim(),
           privateKey: answers.privateKey.trim()
-        } satisfies Profile;
+        } satisfies Profile
       case 'oauthCredentials': {
         return {
           name: answers.name.trim(),
           priority: answers.priority,
           authType: 'oauthCredentials',
           command: answers.command.trim()
-        } satisfies Profile;
+        } satisfies Profile
       }
       default: {
         // biome-ignore lint/correctness/noUnusedVariables: unreachable check
-        const unreachable: never = authType;
-        throw new Error('Invalid authentication type');
+        const unreachable: never = authType
+        throw new Error('Invalid authentication type')
       }
     }
-  })();
+  })()
 
-  await profileManager.addProfile(profile);
-  console.log(`\n✓ Profile "${profile.name}" created successfully!\n`);
+  await profileManager.addProfile(profile)
+  console.log(`\n✓ Profile "${profile.name}" created successfully!\n`)
 
-  return profile;
+  return profile
 }
 
 export async function addProfileCommand(profileManager: ProfileManager) {
-  await createProfileInteractive(profileManager);
+  await createProfileInteractive(profileManager)
 }
