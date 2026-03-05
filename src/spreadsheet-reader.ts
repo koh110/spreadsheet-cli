@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process'
 import { google } from 'googleapis'
 import { parseEnv } from 'node:util'
-import { TOKEN_PATH } from './config.ts'
+import fs from 'node:fs/promises'
+import { TOKEN_DIR, TOKEN_PATH } from './config.ts'
 import { authenticate } from './google.ts'
 import type { Profile } from './profile-manager.ts'
 
@@ -95,6 +96,11 @@ async function getAuth(profile: Profile) {
         scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
       })
     case 'oauthCredentials': {
+      try {
+        await fs.access(TOKEN_DIR)
+      } catch {
+        await fs.mkdir(TOKEN_DIR, { recursive: true })
+      }
       const result = await authenticate({
         tokenPath: TOKEN_PATH,
         getCredentials: () => getOauthCredentials(profile.command)

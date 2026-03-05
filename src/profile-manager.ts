@@ -1,6 +1,6 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { z } from 'zod'
-import { CONFIG_DIR, CONFIG_FILE } from './config.ts'
+import { CONFIG_DIR, CONFIG_FILE_PATH } from './config.ts'
 import { zodAuthTypeLiterals } from './schema.ts'
 
 const baseProfileShape = {
@@ -76,13 +76,13 @@ async function loadConfig() {
     await mkdir(CONFIG_DIR, { recursive: true })
   }
 
-  if (!(await pathExists(CONFIG_FILE))) {
+  if (!(await pathExists(CONFIG_FILE_PATH))) {
     const defaultConfig = { profiles: [] }
-    await writeFile(CONFIG_FILE, JSON.stringify(defaultConfig, null, 2))
+    await writeFile(CONFIG_FILE_PATH, JSON.stringify(defaultConfig, null, 2))
     return defaultConfig
   }
 
-  const data = await readFile(CONFIG_FILE, 'utf-8')
+  const data = await readFile(CONFIG_FILE_PATH, 'utf-8')
   const parsed: unknown = JSON.parse(data)
   const normalized = configSchema.safeParse(parsed)
   if (!normalized.success) {
@@ -95,7 +95,7 @@ async function loadConfig() {
 }
 
 async function saveConfig(config: ProfileConfig) {
-  await writeFile(CONFIG_FILE, JSON.stringify(config, null, 2))
+  await writeFile(CONFIG_FILE_PATH, JSON.stringify(config, null, 2))
 }
 
 function getProfiles(config: ProfileConfig) {
