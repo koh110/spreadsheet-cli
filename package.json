@@ -1,0 +1,35 @@
+{
+  "name": "spreadsheet-cli",
+  "version": "1.0.0",
+  "description": "CLI tool to read Google Spreadsheets with profile management",
+  "main": "src/index.ts",
+  "bin": {
+    "spreadsheet-cli": "src/index.ts"
+  },
+  "scripts": {
+    "start": "node src/index.ts",
+    "dev": "node src/index.ts",
+    "test": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koh110/spreadsheet-cli.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/koh110/spreadsheet-cli/issues"
+  },
+  "homepage": "https://github.com/koh110/spreadsheet-cli#readme",
+  "dependencies": {
+    "googleapis": "^171.4.0",
+    "inquirer": "^13.3.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "typescript": "^5.9.3"
+  }
+}
