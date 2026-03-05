@@ -8,7 +8,7 @@ CLI tool to read Google Spreadsheets with multi-profile management and automatic
 - 👤 Manage multiple authentication profiles
 - 🔄 Automatic fallback with priority-based profile selection
 - 🎯 Interactive profile creation
-- 🔑 Support for API Keys, Service Accounts, and OAuth credentials command authentication
+- 🔑 Support for OAuth credentials command, API Keys, and Service Accounts authentication
 - 📤 Multiple output formats (JSON, CSV, Table)
 
 ## Installation
@@ -66,6 +66,12 @@ node src/index.ts profile:remove --name myprofile
 
 ## Authentication
 
+### OAuth credentials command (User)
+Main recommended option for user-owned spreadsheets:
+1. Prepare a command that outputs `GOOGLE_CREDENTIALS_JSON=...` (OAuth client credentials JSON, for example via 1Password CLI)
+2. Configure that command in the profile (`authType: oauthCredentials`)
+3. On first run, the CLI opens your browser for consent automatically and stores token at `~/.config/koh110/spreadsheet-cli/token.json`
+
 ### API Key
 For simple read-only access, you can use a Google API Key:
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
@@ -75,7 +81,7 @@ For simple read-only access, you can use a Google API Key:
 5. Make sure your spreadsheet is publicly readable or shared with anyone with the link
 
 ### Service Account
-For more secure access:
+For service-to-service access:
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create or select a project
 3. Enable the Google Sheets API
@@ -83,12 +89,6 @@ For more secure access:
 5. Download the JSON key file
 6. Share your spreadsheet with the service account email
 7. When creating a profile, paste the client_email and private_key from the JSON file
-
-### OAuth credentials command (User)
-For user-owned spreadsheets without service accounts:
-1. Prepare a command that outputs OAuth `credentials.json` content (for example with 1Password CLI)
-2. Configure that command in the profile
-3. The CLI executes the command at read time and uses the returned JSON for authentication
 
 ## Profile Priority
 

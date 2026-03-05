@@ -22,8 +22,8 @@ This will start an interactive prompt:
 No profiles found. Let's create one!
 
 ? Profile name: default
-? Authentication type: API Key
-? API Key: YOUR_API_KEY_HERE
+? Authentication type: OAuth credentials command (User)
+? Command to fetch OAuth credentials.json: op read "op://vault/google-oauth/credentials" | sed 's/^/GOOGLE_CREDENTIALS_JSON=/'
 ? Priority (lower number = higher priority): 1
 
 ✓ Profile "default" created successfully!
@@ -37,30 +37,30 @@ You can add multiple profiles for fallback:
 node src/index.ts profile:add
 ```
 
-Interactive prompt example:
+Interactive prompt example (API key fallback):
 
 ```
 ? Profile name: backup
-? Authentication type: Service Account (JSON key)
-? Service account email: your-service-account@project.iam.gserviceaccount.com
-? Private key (paste the key including -----BEGIN/END PRIVATE KEY-----): 
------BEGIN PRIVATE KEY-----
-...your key here...
------END PRIVATE KEY-----
+? Authentication type: API Key
+? API Key: YOUR_API_KEY_HERE
 ? Priority (lower number = higher priority): 2
 
 ✓ Profile "backup" created successfully!
 ```
 
-OAuth credentials command prompt example:
+Service account prompt example:
 
 ```
-? Profile name: oauth-user
-? Authentication type: OAuth credentials command (User)
-? Command to fetch OAuth credentials.json: op read "op://vault/google-oauth/credentials"
+? Profile name: service-account
+? Authentication type: Service Account (JSON key)
+? Service account email: your-service-account@project.iam.gserviceaccount.com
+? Private key (paste the key including -----BEGIN/END PRIVATE KEY-----):
+-----BEGIN PRIVATE KEY-----
+...your key here...
+-----END PRIVATE KEY-----
 ? Priority (lower number = higher priority): 3
 
-✓ Profile "oauth-user" created successfully!
+✓ Profile "service-account" created successfully!
 ```
 
 ### 4. Read spreadsheet data
@@ -108,17 +108,17 @@ Output:
 ```
 Profiles:
 
-  default
+  oauth-user
     Priority: 1
-    Auth: API Key
+    Auth: OAuth credentials command
 
   backup
     Priority: 2
-    Auth: Service Account
+    Auth: API Key
 
-  oauth-user
+  service-account
     Priority: 3
-    Auth: OAuth credentials command
+    Auth: Service Account
 ```
 
 #### Remove a profile:
@@ -155,48 +155,40 @@ Data retrieved using profile: backup
 
 ## Use Cases
 
-### Use Case 1: Multiple API Keys for Rate Limiting
+### Use Case 1: OAuth Credentials Command as Primary (Recommended)
 
-Create multiple profiles with different API keys to handle rate limits:
+Use OAuth credentials as your primary profile for user-owned spreadsheets:
 
 ```bash
-# Add first API key with priority 1
+# Add OAuth profile with priority 1
 node src/index.ts profile:add
-# name: api-key-1, auth: API Key, priority: 1
-
-# Add second API key with priority 2
-node src/index.ts profile:add
-# name: api-key-2, auth: API Key, priority: 2
-
-# Add third API key with priority 3
-node src/index.ts profile:add
-# name: api-key-3, auth: API Key, priority: 3
+# name: oauth-user, auth: oauthCredentials, priority: 1
 ```
 
-Now when you read a spreadsheet, if one key hits the rate limit, it automatically falls back to the next.
+The CLI launches browser authorization automatically when needed, then reuses saved token.
 
-### Use Case 2: Service Account + API Key Fallback
+### Use Case 2: OAuth + API Key Fallback
 
-Use a service account as primary and API key as backup:
+Use OAuth as primary and API key as backup:
 
 ```bash
-# Add service account with priority 1
+# Add oauth profile with priority 1
 node src/index.ts profile:add
-# name: service-account, auth: Service Account, priority: 1
+# name: oauth-user, auth: oauthCredentials, priority: 1
 
 # Add API key with priority 2
 node src/index.ts profile:add
 # name: api-key-backup, auth: API Key, priority: 2
 ```
 
-### Use Case 3: OAuth Credentials Command for User-Owned Sheets
+### Use Case 3: Service Account Fallback
 
-Use an OAuth credentials command for user-owned spreadsheets that aren't shared with service accounts:
+Add service account as fallback when needed:
 
 ```bash
-# Add OAuth command profile with priority 1
+# Add service account profile with priority 3
 node src/index.ts profile:add
-# name: oauth-user, auth: oauthCredentials, priority: 1
+# name: service-account, auth: serviceAccount, priority: 3
 ```
 
 ## Configuration File
@@ -207,22 +199,22 @@ Profiles are stored in `~/.spreadsheet-cli/config.json`:
 {
   "profiles": [
     {
-      "name": "default",
-      "authType": "apiKey",
-      "apiKey": "YOUR_API_KEY",
+      "name": "oauth-user",
+      "authType": "oauthCredentials",
+      "command": "op environment read xxxx",
       "priority": 1
     },
     {
       "name": "backup",
-      "authType": "serviceAccount",
-      "clientEmail": "service@project.iam.gserviceaccount.com",
-      "privateKey": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+      "authType": "apiKey",
+      "apiKey": "YOUR_API_KEY",
       "priority": 2
     },
     {
-      "name": "oauth-user",
-      "authType": "oauthCredentials",
-      "command": "op read \"op://vault/google-oauth/credentials\"",
+      "name": "service-account",
+      "authType": "serviceAccount",
+      "clientEmail": "service@project.iam.gserviceaccount.com",
+      "privateKey": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
       "priority": 3
     }
   ]
