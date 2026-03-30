@@ -11,6 +11,7 @@ Usage: spreadsheet-cli <command> [options]
 
 Commands:
   read                     Read data from a Google Spreadsheet
+  write                    Write data to a Google Spreadsheet
   profile:add              Add a new profile
   profile:list             List all profiles
   profile:remove           Remove a profile
@@ -22,11 +23,19 @@ Options for 'read' command:
   -p, --profile <name>       Profile name to use
   -f, --format <format>      Output format: json|csv|table (default: "table")
 
+Options for 'write' command:
+  -s, --spreadsheet-id <id>      Spreadsheet ID (required)
+  -r, --range <range>            Range to write (default: "Sheet1")
+  -p, --profile <name>           Profile name to use
+  -v, --values <json>            JSON two-dimensional array to write (required)
+      --value-input-option <x>   raw|user-entered (default: "raw")
+
 Options for 'profile:remove' command:
   -n, --name <name>          Profile name (required)
 
 Examples:
   spreadsheet-cli read -s 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms -r "Sheet1!A1:D10"
+  spreadsheet-cli write -s 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms -r "Sheet1!A1:B2" -v '[["name","score"],["Alice",10]]'
   spreadsheet-cli profile:add
   spreadsheet-cli profile:list
   spreadsheet-cli profile:remove -n myprofile
@@ -60,6 +69,11 @@ switch (command) {
   case 'read':
     await import('./commands.ts').then((module) =>
       module.handleReadCommand(profileManager)
+    )
+    break
+  case 'write':
+    await import('./commands.ts').then((module) =>
+      module.handleWriteCommand(profileManager)
     )
     break
   case 'profile:clear':

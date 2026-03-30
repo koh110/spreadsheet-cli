@@ -96,7 +96,28 @@ node src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2
 node src/index.ts read --spreadsheet-id 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms --range "Class Data!A1:E" --format json
 ```
 
-### 5. Manage profiles
+### 5. Write spreadsheet data
+
+Use an OAuth credentials or service account profile for writes:
+
+```bash
+node src/index.ts write \
+  --spreadsheet-id YOUR_SPREADSHEET_ID \
+  --range "Sheet1!A1:B2" \
+  --values '[["Task","Status"],["ship write support","done"]]'
+```
+
+Use `--value-input-option user-entered` when you want Google Sheets to evaluate formulas or parse input:
+
+```bash
+node src/index.ts write \
+  --spreadsheet-id YOUR_SPREADSHEET_ID \
+  --range "Sheet1!C1" \
+  --values '[["=SUM(B2:B10)"]]' \
+  --value-input-option user-entered
+```
+
+### 6. Manage profiles
 
 #### List all profiles:
 

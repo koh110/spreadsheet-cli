@@ -1,10 +1,11 @@
 # spreadsheet-cli
 
-CLI tool to read Google Spreadsheets with multi-profile management and automatic fallback.
+CLI tool to read and write Google Spreadsheets with multi-profile management and automatic fallback.
 
 ## Features
 
 - 📊 Read data from Google Spreadsheets
+- ✍️ Write data to Google Spreadsheets
 - 👤 Manage multiple authentication profiles
 - 🔄 Automatic fallback with priority-based profile selection
 - 🎯 Interactive profile creation
@@ -39,6 +40,23 @@ node src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --for
 
 # Output as CSV
 node src/index.ts read --spreadsheet-id YOUR_SPREADSHEET_ID --range Sheet1 --format csv
+```
+
+### Write to a Spreadsheet
+
+```bash
+# Write raw values
+node src/index.ts write \
+  --spreadsheet-id YOUR_SPREADSHEET_ID \
+  --range Sheet1!A1:B2 \
+  --values '[["Name","Score"],["Alice",10]]'
+
+# Let Sheets parse entered values like formulas and dates
+node src/index.ts write \
+  --spreadsheet-id YOUR_SPREADSHEET_ID \
+  --range Sheet1!A1 \
+  --values '[["=TODAY()"]]' \
+  --value-input-option user-entered
 ```
 
 Or use npm scripts:
@@ -90,9 +108,11 @@ For service-to-service access:
 6. Share your spreadsheet with the service account email
 7. When creating a profile, paste the client_email and private_key from the JSON file
 
+`write` requires either an OAuth credentials profile or a service account profile. API keys are read-only and cannot update spreadsheet values.
+
 ## Profile Priority
 
-Profiles have a priority setting (lower number = higher priority). When reading a spreadsheet:
+Profiles have a priority setting (lower number = higher priority). When running a spreadsheet command:
 1. Profiles are tried in priority order
 2. The first successful profile is used
 

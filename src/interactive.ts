@@ -3,6 +3,12 @@ import { z } from 'zod'
 import type { Profile, ProfileManager } from './profile-manager.ts'
 import { zodAuthTypeLiterals } from './schema.ts'
 
+const authTypeChoices = [
+  { name: 'API Key', value: 'apiKey' },
+  { name: 'Service Account (JSON key)', value: 'serviceAccount' },
+  { name: 'OAuth credentials command (User)', value: 'oauthCredentials' }
+] as const
+
 const baseAnswer = z.object({
   name: z.string(),
   authType: z.union([
@@ -51,13 +57,32 @@ const authTypeSchema = z.object({
 type AuthType = ReturnType<typeof authTypeSchema.parse>['authType']
 type ProfileAnswers = ReturnType<typeof profileAnswersSchema.parse>
 
+type CreateProfileInteractiveOptions = {
+  allowedAuthTypes?: readonly AuthType[]
+  introMessage?: string
+}
+
 function getAuthType(answers: unknown): AuthType | undefined {
   const parsed = authTypeSchema.safeParse(answers)
   return parsed.success ? parsed.data.authType : undefined
 }
 
-export async function createProfileInteractive(profileManager: ProfileManager) {
-  console.log("\nNo profiles found. Let's create one!\n")
+function getAllowedAuthTypeChoices(allowedAuthTypes: readonly AuthType[]) {
+  return authTypeChoices.filter((choice) =>
+    allowedAuthTypes.includes(choice.value)
+  )
+}
+
+export async function createProfileInteractive(
+  profileManager: ProfileManager,
+  options: CreateProfileInteractiveOptions = {}
+) {
+  const allowedAuthTypes =
+    options.allowedAuthTypes ?? authTypeChoices.map((choice) => choice.value)
+
+  console.log(
+    options.introMessage ?? "\nNo profiles found. Let's create one!\n"
+  )
 
   const answers = await inquirer.prompt<ProfileAnswers>([
     {
@@ -75,12 +100,8 @@ export async function createProfileInteractive(profileManager: ProfileManager) {
     {
       type: 'list',
       name: 'authType',
-      message: `Authentication type(${Object.keys(zodAuthTypeLiterals).join('|')}):`,
-      choices: [
-        { name: 'API Key', value: 'apiKey' },
-        { name: 'Service Account (JSON key)', value: 'serviceAccount' },
-        { name: 'OAuth credentials command (User)', value: 'oauthCredentials' }
-      ]
+      message: `Authentication type(${allowedAuthTypes.join('|')}):`,
+      choices: getAllowedAuthTypeChoices(allowedAuthTypes)
     },
     {
       type: 'input',

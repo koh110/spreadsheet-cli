@@ -7,6 +7,11 @@ import { authenticate } from './google.ts'
 import type { Profile } from './profile-manager.ts'
 
 const COMMAND_TIMEOUT_MS = 30_000
+const SPREADSHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets'
+
+export type SpreadsheetCellValue = string | number | boolean | null
+export type SpreadsheetValues = SpreadsheetCellValue[][]
+export type ValueInputOption = 'RAW' | 'USER_ENTERED'
 
 async function getOauthCredentials(command: string) {
   try {
@@ -85,15 +90,21 @@ async function getOauthCredentials(command: string) {
   }
 }
 
-async function getAuth(profile: Profile) {
+async function getAuth(
+  profile: Profile,
+  options: { requireWriteAccess?: boolean } = {}
+) {
   switch (profile.authType) {
     case 'apiKey':
+      if (options.requireWriteAccess) {
+        throw new Error('API key profiles do not support write operations')
+      }
       return profile.apiKey
     case 'serviceAccount':
       return new google.auth.JWT({
         email: profile.clientEmail,
         key: profile.privateKey.replace(/\\n/g, '\n'),
-        scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+        scopes: [SPREADSHEETS_SCOPE]
       })
     case 'oauthCredentials': {
       try {
@@ -137,6 +148,39 @@ async function readSpreadsheet(
   }
 }
 
+async function writeSpreadsheet(
+  spreadsheetId: string,
+  range: string,
+  values: SpreadsheetValues,
+  valueInputOption: ValueInputOption,
+  profile: Profile
+) {
+  const auth = await getAuth(profile, { requireWriteAccess: true })
+  const sheets = google.sheets({ version: 'v4', auth })
+
+  try {
+    const response = await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range,
+      valueInputOption,
+      requestBody: {
+        values
+      }
+    })
+    return {
+      updatedRange: response.data.updatedRange ?? range,
+      updatedRows: response.data.updatedRows ?? 0,
+      updatedColumns: response.data.updatedColumns ?? 0,
+      updatedCells: response.data.updatedCells ?? 0
+    }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(
+      `Failed to write spreadsheet with profile "${profile.name}": ${message}`
+    )
+  }
+}
+
 async function readWithFallback(
   spreadsheetId: string,
   range: string,
@@ -169,6 +213,51 @@ async function readWithFallback(
   )
 }
 
+async function writeWithFallback(
+  spreadsheetId: string,
+  range: string,
+  values: SpreadsheetValues,
+  valueInputOption: ValueInputOption,
+  profiles: Profile[]
+) {
+  let lastError: Error | null = null
+
+  let res: {
+    data: Awaited<ReturnType<typeof writeSpreadsheet>>
+    profile: Profile
+  } | null = null
+  for (let i = 0; i < profiles.length; i++) {
+    const profile = profiles[i]
+    try {
+      const data = await writeSpreadsheet(
+        spreadsheetId,
+        range,
+        values,
+        valueInputOption,
+        profile
+      )
+      res = { data, profile }
+      break
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.log(`Failed [${profile.name}]: ${message}`)
+      lastError = error instanceof Error ? error : new Error(message)
+    }
+  }
+  if (res !== null) {
+    return res
+  }
+
+  throw new Error(
+    `All profiles failed to write the spreadsheet. Last error: ${lastError?.message || 'Unknown error'}`
+  )
+}
+
 export function createSpreadsheetReader() {
-  return { readSpreadsheet, readWithFallback }
+  return {
+    readSpreadsheet,
+    readWithFallback,
+    writeSpreadsheet,
+    writeWithFallback
+  }
 }
